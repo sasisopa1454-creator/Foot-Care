@@ -1,0 +1,236 @@
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap');
+
+:root {
+    --purple-main: #6a1b9a;      /* ม่วงหลัก */
+    --purple-light: #f3e5f5;     /* ม่วงอ่อนพื้นหลัง */
+    --purple-dark: #4a148c;      /* ม่วงเข้มปุ่ม */
+    --white: #ffffff;
+    --text-gray: #666666;
+    --shadow: 0 10px 30px rgba(106, 27, 154, 0.1);
+}
+
+* {
+    box-sizing: border-box;
+    font-family: 'Kanit', sans-serif;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #fdfbff; /* พื้นหลังสีขาวอมม่วงนิดๆ */
+    color: #333;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* --- Header Section --- */
+.header {
+    text-align: center;
+    padding: 40px 0;
+}
+
+.title h1 {
+    font-size: 3.5rem;
+    color: var(--purple-main);
+    margin: 0;
+    letter-spacing: 2px;
+}
+
+.title h5 {
+    font-size: 1.2rem;
+    color: var(--text-gray);
+    margin: 10px 0 0;
+    font-weight: 300;
+}
+
+/* --- Stats Grid (Cards ด้านบน) --- */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 30px;
+}
+
+.stat-card {
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-card.purple-light {
+    background: var(--white);
+    border: 1px solid var(--purple-light);
+}
+
+.stat-card.purple-dark {
+    background: var(--purple-main);
+    color: var(--white);
+}
+
+.stat-value {
+    font-size: 3rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.stat-value.purple { color: var(--purple-main); }
+.stat-value.white { color: var(--white); }
+
+.stat-label {
+    font-size: 1.1rem;
+    opacity: 0.8;
+}
+
+/* --- Main Layout --- */
+.main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.card {
+    background: var(--white);
+    border-radius: 25px;
+    padding: 40px;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(106, 27, 154, 0.05);
+}
+
+.card-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--purple-main);
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* --- Timer & Progress Bar --- */
+.timer-container {
+    text-align: center;
+    margin: 30px 0;
+}
+
+.timer-value {
+    font-size: 6rem;
+    font-weight: 600;
+    color: var(--purple-dark);
+    line-height: 1;
+}
+
+.timer-unit {
+    font-size: 1.2rem;
+    color: var(--text-gray);
+}
+
+.progress-bar-bg {
+    width: 100%;
+    height: 14px;
+    background: #eee;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 30px;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, var(--purple-main), var(--purple-dark));
+    border-radius: 10px;
+    transition: width 1s linear;
+}
+
+.motivation-box {
+    background: var(--purple-light);
+    padding: 15px;
+    border-radius: 15px;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.motivation-box p {
+    margin: 0;
+    color: var(--purple-dark);
+    font-size: 1rem;
+}
+
+/* --- Button --- */
+.btn-start {
+    width: 100%;
+    padding: 18px;
+    border: none;
+    border-radius: 15px;
+    background: var(--purple-main);
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(106, 27, 154, 0.3);
+}
+
+.btn-start:hover {
+    background: var(--purple-dark);
+    box-shadow: 0 6px 20px rgba(106, 27, 154, 0.4);
+}
+
+.btn-start:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* --- Table Styles --- */
+.table-header {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--purple-main);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--purple-light);
+}
+
+.table-scroll {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th {
+    text-align: center;
+    padding: 15px;
+    background: var(--purple-light);
+    color: var(--purple-main);
+    font-weight: 600;
+}
+
+.data-table td {
+    padding: 15px;
+    text-align: center;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 1.1rem;
+}
+
+.data-table tr:hover {
+    background-color: #fafafa;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .main-grid {
+        grid-template-columns: 1fr;
+    }
+}
