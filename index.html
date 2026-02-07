@@ -1,85 +1,42 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FOOT CARE - Ankle Monitor</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <div class="title">
-                <h1>FOOT CARE</h1>
-                <h5>ระบบบันทึกผลการบริหารข้อเท้าแบบเรียลไทม์</h5>
-            </div>
-            <div class="stats-grid">
-                <div class="stat-card purple-light">
-                    <div class="stat-value purple" id="liveDorsi">0.0</div>
-                    <div class="stat-label">ยกปลายเท้า (Dorsi)</div>
-                </div>
-                <div class="stat-card purple-light">
-                    <div class="stat-value purple" id="livePlantar">0.0</div>
-                    <div class="stat-label">เหยียดปลายเท้า (Plantar)</div>
-                </div>
-                <div class="stat-card purple-dark">
-                    <div class="stat-value white" id="setCountDisplay">0 / 5</div>
-                    <div class="stat-label white">เซ็ตปัจจุบัน</div>
-                </div>
-            </div>
-        </div>
+// ===============================
+//  FOOT CARE - Firebase Live View
+// ===============================
 
-        <div class="main-grid">
-            <div class="card">
-                <div class="card-title" id="currentActionText">รอเริ่มการฝึก...</div>
-                
-                <div style="margin-bottom: 20px; height: 200px;">
-                    <canvas id="exerciseChart"></canvas>
-                </div>
+// 🔹 Firebase SDK (เวอร์ชันเดียว!)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-                <div class="timer-container">
-                    <div class="timer-value" id="timerDisplay">30</div>
-                    <div class="timer-unit">วินาที</div>
-                </div>
-                <div class="progress-bar-bg">
-                    <div class="progress-fill" id="timerBar"></div>
-                </div>
-                
-                <div class="motivation-box">
-                    <p id="motivationText">กรุณาวางเท้าให้ตรง แล้วกดเริ่มฝึก</p>
-                </div>
-                <button class="btn-start" id="startBtn">เริ่มเก็บข้อมูล (5 เซ็ต)</button>
-            </div>
+// 🔹 Firebase Config (ของโปรเจกต์คุณ)
+const firebaseConfig = {
+  apiKey: "AIzaSyArB39e1jNG71QNBrSDGoXzQk7o4HE9SfM",
+  databaseURL: "https://foot-care-15028-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "foot-care-15028",
+  appId: "1:568507097776:web:5ecd08c79da53ed42f1175"
+};
 
-            <div class="card">
-                <div class="table-header">
-                    <span>ตารางสรุปผล (5 เซ็ต)</span>
-                </div>
-                <div class="table-scroll">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>เซ็ต</th>
-                                <th>Dorsi (°)</th>
-                                <th>Plantar (°)</th>
-                                <th>ROM (รวม)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="exerciseTableBody"></tbody>
-                    </table>
-                </div>
+// 🔹 Init Firebase
+console.log("🔥 script.js loaded");
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-                <div id="summarySection" style="display: none; margin-top: 20px; border-top: 2px solid #eee; pt: 20px;">
-                    <button id="viewResultBtn" class="btn-start" style="background: #2ecc71; margin-bottom: 15px;">
-                        แสดงผลการประเมินสุขภาพ
-                    </button>
-                    <div id="evaluationResult" style="padding: 15px; border-radius: 10px; font-size: 0.9rem; line-height: 1.6;">
-                        </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script type="module" src="script.js"></script>
-</body>
-</html>
+// ===============================
+// 🔴 ดึงข้อมูลจาก ESP32 (/live)
+// ===============================
+const liveRef = ref(db, "live");
+
+onValue(liveRef, (snapshot) => {
+  const data = snapshot.val();
+  console.log("📡 Firebase data:", data);
+
+  if (!data) return;
+
+  const angleX = data.angleX ?? 0;
+  const angleY = data.angleY ?? 0;
+
+  // 🔹 แสดงบนหน้าเว็บ
+  const dorsiEl = document.getElementById("liveDorsi");
+  const plantarEl = document.getElementById("livePlantar");
+
+  if (dorsiEl) dorsiEl.innerText = angleX.toFixed(1);
+  if (plantarEl) plantarEl.innerText = angleY.toFixed(1);
+});
