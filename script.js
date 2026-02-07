@@ -208,3 +208,4 @@ onValue(ref(db, "history"), (snapshot) => {
       </tr>`;
   });
 });
+
