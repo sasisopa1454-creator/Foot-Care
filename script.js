@@ -1,194 +1,210 @@
+// ===============================
+// 1. Firebase SDK (ใช้ชุดเดียว)
+// ===============================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
 import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
 
-// --- 1. Firebase Config (อย่าลืมใส่ Key ของคุณนะครับ) ---
+// ===============================
+// 2. Firebase Config
+// ===============================
 const firebaseConfig = {
-    apiKey: "AIzaSyArB39e1jNG71QNBrSDGoXzQk7o4HE9SfM", 
-    databaseURL: "https://foot-care-15028-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "foot-care-15028",
-    appId: "1:568507097776:web:5ecd08c79da53ed42f1175" 
+  apiKey: "AIzaSyArB39e1jNG71QNBrSDGoXzQk7o4HE9SfM",
+  databaseURL: "https://foot-care-15028-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "foot-care-15028",
+  appId: "1:568507097776:web:5ecd08c79da53ed42f1175"
 };
 
+// init
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// ===============================
+// 3. ตัวแปรหลัก
+// ===============================
 let currentAngle = 0;
 let isRunning = false;
-let timeCount = 0; 
+let timeCount = 0;
 let exerciseChart;
 let historyData = { dorsi: [], plantar: [], rom: [] };
 
-// --- 2. ฟังก์ชันเริ่มทำงานเมื่อโหลดหน้าเว็บเสร็จ ---
+// ===============================
+// 4. โหลดหน้าเว็บ
+// ===============================
 window.onload = () => {
-    initChart();
-    setupEventListeners();
+  initChart();
+  setupEventListeners();
 };
 
+// ===============================
+// 5. สร้างกราฟ
+// ===============================
 function initChart() {
-    const canvas = document.getElementById('exerciseChart');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    
-    exerciseChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'องศาปัจจุบัน (Live)',
-                data: [],
-                borderColor: '#8e44ad',
-                backgroundColor: 'rgba(142, 68, 173, 0.1)',
-                borderWidth: 2,
-                pointRadius: 0,
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            scales: {
-                y: { min: -70, max: 70, title: { display: true, text: 'องศา (°)' } },
-                x: { title: { display: true, text: 'เวลา (วินาที)' } }
-            }
-        }
-    });
+  const canvas = document.getElementById("exerciseChart");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  exerciseChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: [],
+      datasets: [{
+        label: "องศาปัจจุบัน (Live)",
+        data: [],
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.4
+      }]
+    },
+    options: {
+      animation: false,
+      responsive: true,
+      scales: {
+        y: { min: -70, max: 70 },
+        x: { title: { display: true, text: "เวลา (วินาที)" } }
+      }
+    }
+  });
 }
 
-// --- 3. รับค่า Realtime จาก Sensor ---
-onValue(ref(db, 'live/angleX'), (snapshot) => {
-    currentAngle = parseFloat(snapshot.val() || 0);
-    
-    // อัปเดตตัวเลขสด
-    const liveDorsi = document.getElementById("liveDorsi");
-    const livePlantar = document.getElementById("livePlantar");
-    
-    if (liveDorsi && livePlantar) {
-        if (currentAngle >= 0) {
-            liveDorsi.innerText = currentAngle.toFixed(1);
-            livePlantar.innerText = "0.0"; 
-        } else {
-            liveDorsi.innerText = "0.0";
-            livePlantar.innerText = Math.abs(currentAngle).toFixed(1);
-        }
-    }
+// ===============================
+// 6. รับค่า Realtime จาก Firebase
+// ===============================
+onValue(ref(db, "live/angleX"), (snapshot) => {
+  console.log("Firebase angleX =", snapshot.val()); // 🔍 LOG สำคัญ
 
-    // กราฟยึกยือ
-    if (isRunning && exerciseChart) {
-        timeCount++;
-        exerciseChart.data.labels.push(timeCount);
-        exerciseChart.data.datasets[0].data.push(currentAngle);
-        
-        if (exerciseChart.data.labels.length > 100) {
-            exerciseChart.data.labels.shift();
-            exerciseChart.data.datasets[0].data.shift();
-        }
-        exerciseChart.update('none');
+  currentAngle = parseFloat(snapshot.val() || 0);
+
+  const liveDorsi = document.getElementById("liveDorsi");
+  const livePlantar = document.getElementById("livePlantar");
+
+  if (liveDorsi && livePlantar) {
+    if (currentAngle >= 0) {
+      liveDorsi.innerText = currentAngle.toFixed(1);
+      livePlantar.innerText = "0.0";
+    } else {
+      liveDorsi.innerText = "0.0";
+      livePlantar.innerText = Math.abs(currentAngle).toFixed(1);
     }
+  }
+
+  if (isRunning && exerciseChart) {
+    timeCount++;
+    exerciseChart.data.labels.push(timeCount);
+    exerciseChart.data.datasets[0].data.push(currentAngle);
+
+    if (exerciseChart.data.labels.length > 100) {
+      exerciseChart.data.labels.shift();
+      exerciseChart.data.datasets[0].data.shift();
+    }
+    exerciseChart.update("none");
+  }
 });
 
-// --- 4. ฟังก์ชันนับเวลาฝึก และ "คำนวณค่าเฉลี่ย" ---
+// ===============================
+// 7. ฟังก์ชันจับค่าเฉลี่ย
+// ===============================
 function runPhase(name, seconds) {
-    return new Promise((resolve) => {
-        let timeLeft = seconds;
-        let collectedValues = [];
-        document.getElementById("currentActionText").innerText = name;
-        
-        const interval = setInterval(() => {
-            document.getElementById("timerDisplay").innerText = timeLeft;
-            document.getElementById("timerBar").style.width = (timeLeft / seconds) * 100 + "%";
-            
-            collectedValues.push(Math.abs(currentAngle));
-            
-            if (timeLeft <= 0) {
-                clearInterval(interval);
-                const avg = collectedValues.reduce((a, b) => a + b, 0) / collectedValues.length;
-                resolve(avg);
-            }
-            timeLeft--;
-        }, 1000);
-    });
+  return new Promise((resolve) => {
+    let timeLeft = seconds;
+    let values = [];
+
+    document.getElementById("currentActionText").innerText = name;
+
+    const interval = setInterval(() => {
+      document.getElementById("timerDisplay").innerText = timeLeft;
+      document.getElementById("timerBar").style.width =
+        (timeLeft / seconds) * 100 + "%";
+
+      values.push(Math.abs(currentAngle));
+
+      if (timeLeft <= 0) {
+        clearInterval(interval);
+        const avg =
+          values.reduce((a, b) => a + b, 0) / values.length;
+        resolve(avg);
+      }
+      timeLeft--;
+    }, 1000);
+  });
 }
 
-// --- 5. ตั้งค่าปุ่มกดต่างๆ ---
+// ===============================
+// 8. ปุ่มควบคุม
+// ===============================
 function setupEventListeners() {
-    const startBtn = document.getElementById("startBtn");
-    const viewResultBtn = document.getElementById("viewResultBtn");
+  const startBtn = document.getElementById("startBtn");
+  const viewResultBtn = document.getElementById("viewResultBtn");
 
-    if (startBtn) {
-        startBtn.onclick = async () => {
-            if (isRunning) return;
+  if (startBtn) {
+    startBtn.onclick = async () => {
+      if (isRunning) return;
 
-            // Reset
-            await set(ref(db, 'history'), null);
-            exerciseChart.data.labels = [];
-            exerciseChart.data.datasets[0].data = [];
-            timeCount = 0;
-            historyData = { dorsi: [], plantar: [], rom: [] };
-            exerciseChart.update();
-            document.getElementById("summarySection").style.display = "none";
+      await set(ref(db, "history"), null);
+      historyData = { dorsi: [], plantar: [], rom: [] };
+      timeCount = 0;
 
-            isRunning = true;
-            startBtn.disabled = true;
-            startBtn.innerText = "กำลังฝึก...";
+      exerciseChart.data.labels = [];
+      exerciseChart.data.datasets[0].data = [];
+      exerciseChart.update();
 
-            for (let i = 1; i <= 5; i++) {
-                document.getElementById("setCountDisplay").innerText = `${i} / 5`;
-                
-                const avgDorsi = await runPhase("ยกปลายเท้า (Dorsi)", 30); 
-                const avgPlantar = await runPhase("เหยียดปลายเท้า (Plantar)", 30);
-                
-                const dStr = avgDorsi.toFixed(1);
-                const pStr = avgPlantar.toFixed(1);
-                const romStr = (avgDorsi + avgPlantar).toFixed(1);
+      isRunning = true;
+      startBtn.disabled = true;
 
-                historyData.dorsi.push(avgDorsi);
-                historyData.plantar.push(avgPlantar);
-                historyData.rom.push(avgDorsi + avgPlantar);
-                
-                await set(ref(db, 'history/' + i), {
-                    set: i, 
-                    dorsi: dStr, 
-                    plantar: pStr, 
-                    rom: romStr
-                });
-            }
+      for (let i = 1; i <= 5; i++) {
+        document.getElementById("setCountDisplay").innerText = `${i}/5`;
 
-            document.getElementById("currentActionText").innerText = "การฝึกเสร็จสมบูรณ์!";
-            startBtn.disabled = false;
-            startBtn.innerText = "เริ่มฝึกใหม่อีกครั้ง";
-            document.getElementById("summarySection").style.display = "block";
-            isRunning = false;
-        };
-    }
+        const d = await runPhase("ยกปลายเท้า (Dorsi)", 30);
+        const p = await runPhase("เหยียดปลายเท้า (Plantar)", 30);
 
-    if (viewResultBtn) {
-        viewResultBtn.onclick = () => {
-            const maxD = Math.max(...historyData.dorsi);
-            const maxP = Math.max(...historyData.plantar);
-            const maxR = Math.max(...historyData.rom);
+        historyData.dorsi.push(d);
+        historyData.plantar.push(p);
+        historyData.rom.push(d + p);
 
-            let res = `<b>สรุปค่าเฉลี่ยที่ดีที่สุดจาก 5 เซ็ต</b><br>`;
-            res += `Dorsi: ${maxD.toFixed(1)}° ${maxD >= 20 ? "✅ ปกติ" : "❌ ต่ำกว่าเกณฑ์(≥20°)"}<br>`;
-            res += `Plantar: ${maxP.toFixed(1)}° ${maxP >= 50 ? "✅ ปกติ" : "❌ ต่ำกว่าเกณฑ์(≥50°)"}<br>`;
-            res += `ROM: ${maxR.toFixed(1)}° ${maxR >= 70 ? "✅ ปกติ" : "❌ ต่ำกว่าเกณฑ์(≥70°)"}`;
+        await set(ref(db, "history/" + i), {
+          set: i,
+          dorsi: d.toFixed(1),
+          plantar: p.toFixed(1),
+          rom: (d + p).toFixed(1)
+        });
+      }
 
-            const evalRes = document.getElementById("evaluationResult");
-            evalRes.innerHTML = res;
-            evalRes.style.backgroundColor = (maxR >= 70) ? "#e8f5e9" : "#ffebee";
-        };
-    }
+      isRunning = false;
+      startBtn.disabled = false;
+      document.getElementById("summarySection").style.display = "block";
+    };
+  }
+
+  if (viewResultBtn) {
+    viewResultBtn.onclick = () => {
+      const maxD = Math.max(...historyData.dorsi);
+      const maxP = Math.max(...historyData.plantar);
+      const maxR = Math.max(...historyData.rom);
+
+      document.getElementById("evaluationResult").innerHTML = `
+        Dorsi: ${maxD.toFixed(1)}°<br>
+        Plantar: ${maxP.toFixed(1)}°<br>
+        ROM: ${maxR.toFixed(1)}°
+      `;
+    };
+  }
 }
 
-// --- 6. แสดงตาราง ---
-onValue(ref(db, 'history'), (snapshot) => {
-    const data = snapshot.val();
-    const tbody = document.getElementById("exerciseTableBody");
-    if (tbody && data) {
-        tbody.innerHTML = "";
-        Object.values(data).sort((a, b) => a.set - b.set).forEach(row => {
-            tbody.innerHTML += `<tr><td>${row.set}</td><td>${row.dorsi}</td><td>${row.plantar}</td><td>${row.rom}</td></tr>`;
-        });
-    }
+// ===============================
+// 9. ตาราง History
+// ===============================
+onValue(ref(db, "history"), (snapshot) => {
+  const data = snapshot.val();
+  const tbody = document.getElementById("exerciseTableBody");
+  if (!tbody || !data) return;
+
+  tbody.innerHTML = "";
+  Object.values(data).forEach((r) => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${r.set}</td>
+        <td>${r.dorsi}</td>
+        <td>${r.plantar}</td>
+        <td>${r.rom}</td>
+      </tr>`;
+  });
 });
