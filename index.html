@@ -3,20 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <title>FOOT CARE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- CSS -->
   <link rel="stylesheet" href="style.css">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-<h1>FOOT CARE</h1>
+<div class="container">
 
-<div>
-  <h3>Dorsi</h3>
-  <div id="liveDorsi">0.0</div>
-</div>
+  <h1 class="title">FOOT CARE</h1>
+  <p class="subtitle">ระบบบันทึกผลการบริหารข้อเท้าแบบเรียลไทม์</p>
 
-<div>
-  <h3>Plantar</h3>
-  <div id="livePlantar">0.0</div>
+  <!-- 🔹 กล่องค่า Live -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="value" id="liveDorsi">0.0</div>
+      <div class="label">ยกปลายเท้า (Dorsi)</div>
+    </div>
+    <div class="stat-card">
+      <div class="value" id="livePlantar">0.0</div>
+      <div class="label">เหยียดปลายเท้า (Plantar)</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="value" id="liveROM">0.0</div>
+      <div class="label">ROM รวม</div>
+    </div>
+  </div>
+
+  <!-- 🔹 กราฟ -->
+  <div class="card">
+    <h3>กราฟการเคลื่อนไหวข้อเท้า</h3>
+    <canvas id="angleChart"></canvas>
+  </div>
+
 </div>
 
 <script type="module" src="script.js"></script>
