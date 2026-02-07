@@ -1,48 +1,185 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <title>FOOT CARE</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>FOOT CARE TRAINING</title>
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+    padding: 20px;
+}
+h1 {
+    text-align: center;
+    color: #6a1b9a;
+}
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+button {
+    background: #6a1b9a;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+button:disabled {
+    background: gray;
+}
+.timer {
+    font-size: 32px;
+    text-align: center;
+    margin: 10px 0;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: center;
+}
+th {
+    background: #eee;
+}
+</style>
 </head>
+
 <body>
 
-<div class="container">
+<h1>FOOT CARE</h1>
 
-  <h1 class="title">FOOT CARE</h1>
-  <p class="subtitle">ระบบบันทึกผลการบริหารข้อเท้าแบบเรียลไทม์</p>
+<div class="card">
+    <h2>การฝึก</h2>
+    <p>• ยกเท้า (Dorsi): 5 เซท เซทละ 30 วินาที</p>
+    <p>• เหยียดเท้า (Plantar): 5 เซท เซทละ 30 วินาที</p>
 
-  <!-- 🔹 กล่องค่า Live -->
-  <div class="stats">
-    <div class="stat-card">
-      <div class="value" id="liveDorsi">0.0</div>
-      <div class="label">ยกปลายเท้า (Dorsi)</div>
-    </div>
-    <div class="stat-card">
-      <div class="value" id="livePlantar">0.0</div>
-      <div class="label">เหยียดปลายเท้า (Plantar)</div>
-    </div>
-    <div class="stat-card purple">
-      <div class="value" id="liveROM">0.0</div>
-      <div class="label">ROM รวม</div>
-    </div>
-  </div>
-
-  <!-- 🔹 กราฟ -->
-  <div class="card">
-    <h3>กราฟการเคลื่อนไหวข้อเท้า</h3>
-    <canvas id="angleChart"></canvas>
-  </div>
-
+    <div class="timer" id="timer">30</div>
+    <button onclick="startTraining()" id="startBtn">เริ่มฝึก</button>
 </div>
 
-<script type="module" src="script.js"></script>
+<div class="card">
+    <h2>ตารางสรุปผล</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>เซท</th>
+                <th>Dorsi (°)</th>
+                <th>Plantar (°)</th>
+                <th>ROM (°)</th>
+            </tr>
+        </thead>
+        <tbody id="resultTable"></tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>กราฟผลการฝึก</h2>
+    <canvas id="resultChart"></canvas>
+</div>
+
+<script>
+let currentSet = 0;
+let totalSet = 5;
+let timeLeft = 30;
+let timerInterval;
+
+let dorsiData = [];
+let plantarData = [];
+let romData = [];
+
+const timerEl = document.getElementById("timer");
+const tableEl = document.getElementById("resultTable");
+const startBtn = document.getElementById("startBtn");
+
+const ctx = document.getElementById("resultChart");
+const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [
+            {
+                label: 'Dorsi',
+                data: [],
+            },
+            {
+                label: 'Plantar',
+                data: [],
+            },
+            {
+                label: 'ROM',
+                data: [],
+            }
+        ]
+    }
+});
+
+function startTraining() {
+    startBtn.disabled = true;
+    nextSet();
+}
+
+function nextSet() {
+    if (currentSet >= totalSet) {
+        startBtn.disabled = false;
+        alert("ฝึกครบทุกเซทแล้ว ✅");
+        return;
+    }
+
+    currentSet++;
+    timeLeft = 30;
+    timerEl.textContent = timeLeft;
+
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        timerEl.textContent = timeLeft;
+
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            saveResult();
+            nextSet();
+        }
+    }, 1000);
+}
+
+function saveResult() {
+    // 🔸 ตอนนี้เป็นค่าจำลอง (สุ่ม)
+    let dorsi = Math.floor(Math.random() * 20) + 10;
+    let plantar = Math.floor(Math.random() * 30) + 20;
+    let rom = plantar - dorsi;
+
+    dorsiData.push(dorsi);
+    plantarData.push(plantar);
+    romData.push(rom);
+
+    // เพิ่มแถวในตาราง
+    const row = `
+        <tr>
+            <td>${currentSet}</td>
+            <td>${dorsi}</td>
+            <td>${plantar}</td>
+            <td>${rom}</td>
+        </tr>
+    `;
+    tableEl.innerHTML += row;
+
+    // อัปเดตกราฟ
+    chart.data.labels.push("เซท " + currentSet);
+    chart.data.datasets[0].data = dorsiData;
+    chart.data.datasets[1].data = plantarData;
+    chart.data.datasets[2].data = romData;
+    chart.update();
+}
+</script>
+
 </body>
 </html>
 
