@@ -13,35 +13,31 @@ body{
     transition:0.3s;
 }
 
-.light{
-    background:#f2f2f2;
-    color:#000;
-}
-
-.dark{
-    background:#1e1e1e;
-    color:#fff;
-}
+.light{ background:#f2f2f2; color:#000; }
+.dark{ background:#1e1e1e; color:#fff; }
 
 .wrapper{
     height:100vh;
     display:flex;
     flex-direction:column;
-    padding:10px;
+    padding:6px;
     box-sizing:border-box;
 }
 
+/* ===== TOP (เล็กลง) ===== */
 .top{
     display:flex;
     justify-content:space-around;
     align-items:center;
+    height:18%;
 }
 
 .box{
-    border:2px solid #333;
-    border-radius:8px;
-    padding:8px;
-    width:90px;
+    border:1.5px solid #333;
+    border-radius:6px;
+    padding:5px;
+    width:75px;
+    font-size:12px;
     text-align:center;
     background:white;
     transition:0.3s;
@@ -52,22 +48,27 @@ body{
     border-color:#aaa;
 }
 
+.box h3{ margin:3px 0; font-size:13px; }
+
 button{
-    padding:6px 10px;
-    font-size:13px;
+    padding:4px 8px;
+    font-size:11px;
+    cursor:pointer;
 }
 
+/* ===== CHART ใหญ่ขึ้น ===== */
 .middle{
     display:flex;
     flex:1;
     gap:10px;
+    height:82%;
 }
 
 .chartBox{
     flex:1;
     background:white;
-    padding:5px;
-    border-radius:10px;
+    padding:8px;
+    border-radius:12px;
     transition:0.3s;
 }
 
@@ -94,14 +95,14 @@ canvas{
         <h3>Dorsi</h3>
         <div id="dorsi">0°</div>
         <div id="dorsiCount">1 / 5</div>
-        <button onclick="startMode('dorsi')">Start Dorsi</button>
+        <button onclick="startMode('dorsi')">Start</button>
     </div>
 
     <div class="box">
         <h3>Plantar</h3>
         <div id="plantar">0°</div>
         <div id="plantarCount">1 / 5</div>
-        <button onclick="startMode('plantar')">Start Plantar</button>
+        <button onclick="startMode('plantar')">Start</button>
     </div>
 
     <div class="box">
@@ -152,7 +153,8 @@ const realtimeChart=new Chart(document.getElementById("realtimeChart"),{
             label:'Angle',
             data:[],
             borderColor:'cyan',
-            fill:false
+            fill:false,
+            tension:0.3
         }]
     },
     options:{responsive:true,maintainAspectRatio:false}
@@ -200,6 +202,7 @@ function startMode(selectedMode){
 
     timer=setInterval(()=>{
 
+        // 🔥 เปลี่ยนตรงนี้เป็นค่า MPU จริงได้
         let x=(Math.random()*20-10).toFixed(2);
         let y=(Math.random()*20-10).toFixed(2);
         let z=(Math.random()*20-10).toFixed(2);
@@ -265,9 +268,7 @@ function stopMode(){
 
     romChart.update();
 
-    document.getElementById("statusText").innerText=
-        "เสร็จสิ้น";
-
+    document.getElementById("statusText").innerText="เสร็จสิ้น";
     document.getElementById("timerText").innerText="เวลา: 0 วิ";
 
     document.getElementById("xVal").innerText=0;
@@ -279,13 +280,8 @@ function stopMode(){
 
 function toggleMode(){
     let body=document.body;
-    if(body.classList.contains("light")){
-        body.classList.remove("light");
-        body.classList.add("dark");
-    }else{
-        body.classList.remove("dark");
-        body.classList.add("light");
-    }
+    body.classList.toggle("dark");
+    body.classList.toggle("light");
 }
 
 </script>
