@@ -24,23 +24,22 @@ body{
     box-sizing:border-box;
 }
 
-/* ===== TOP (เล็กลง) ===== */
+/* ===== TOP แนวนอน ===== */
 .top{
     display:flex;
     justify-content:space-around;
     align-items:center;
-    height:18%;
+    height:20%;
 }
 
 .box{
     border:1.5px solid #333;
-    border-radius:6px;
-    padding:5px;
-    width:75px;
-    font-size:12px;
+    border-radius:8px;
+    padding:6px;
+    width:140px;
+    font-size:13px;
     text-align:center;
     background:white;
-    transition:0.3s;
 }
 
 .dark .box{
@@ -48,20 +47,24 @@ body{
     border-color:#aaa;
 }
 
-.box h3{ margin:3px 0; font-size:13px; }
+.valueRow{
+    display:flex;
+    justify-content:space-between;
+    font-size:13px;
+}
 
 button{
+    margin-top:5px;
     padding:4px 8px;
     font-size:11px;
     cursor:pointer;
 }
 
-/* ===== CHART ใหญ่ขึ้น ===== */
+/* ===== CHART ===== */
 .middle{
     display:flex;
     flex:1;
     gap:10px;
-    height:82%;
 }
 
 .chartBox{
@@ -69,7 +72,6 @@ button{
     background:white;
     padding:8px;
     border-radius:12px;
-    transition:0.3s;
 }
 
 .dark .chartBox{
@@ -83,7 +85,6 @@ canvas{
 </head>
 
 <body class="light">
-
 <div class="wrapper">
 
 <h3 id="statusText">เลือกโหมดการฝึก</h3>
@@ -91,27 +92,30 @@ canvas{
 
 <div class="top">
 
+    <!-- Dorsi -->
     <div class="box">
-        <h3>Dorsi</h3>
+        <b>Dorsi</b>
         <div id="dorsi">0°</div>
         <div id="dorsiCount">1 / 5</div>
         <button onclick="startMode('dorsi')">Start</button>
     </div>
 
+    <!-- Plantar -->
     <div class="box">
-        <h3>Plantar</h3>
+        <b>Plantar</b>
         <div id="plantar">0°</div>
         <div id="plantarCount">1 / 5</div>
         <button onclick="startMode('plantar')">Start</button>
     </div>
 
+    <!-- XYZ แนวนอน -->
     <div class="box">
-        <h3>X</h3>
-        <div id="xVal">0</div>
-        <h3>Y</h3>
-        <div id="yVal">0</div>
-        <h3>Z</h3>
-        <div id="zVal">0</div>
+        <b>MPU</b>
+        <div class="valueRow">
+            <div>X: <span id="xVal">0</span></div>
+            <div>Y: <span id="yVal">0</span></div>
+            <div>Z: <span id="zVal">0</span></div>
+        </div>
     </div>
 
     <div class="box">
@@ -122,10 +126,10 @@ canvas{
 
 <div class="middle">
     <div class="chartBox">
-        <canvas id="realtimeChart"></canvas>
+        <canvas id="dorsiChart"></canvas>
     </div>
     <div class="chartBox">
-        <canvas id="romChart"></canvas>
+        <canvas id="plantarChart"></canvas>
     </div>
 </div>
 
@@ -141,32 +145,18 @@ let mode=null;
 let dorsiSet=1;
 let plantarSet=1;
 
-let minVal,maxVal;
-
 let colors=["red","blue","green","orange","purple"];
 
-const realtimeChart=new Chart(document.getElementById("realtimeChart"),{
+const dorsiChart=new Chart(document.getElementById("dorsiChart"),{
     type:'line',
-    data:{
-        labels:[],
-        datasets:[{
-            label:'Angle',
-            data:[],
-            borderColor:'cyan',
-            fill:false,
-            tension:0.3
-        }]
-    },
-    options:{responsive:true,maintainAspectRatio:false}
+    data:{ labels:[], datasets:[] },
+    options:{ responsive:true, maintainAspectRatio:false }
 });
 
-const romChart=new Chart(document.getElementById("romChart"),{
-    type:'bar',
-    data:{
-        labels:["ROM"],
-        datasets:[]
-    },
-    options:{responsive:true,maintainAspectRatio:false}
+const plantarChart=new Chart(document.getElementById("plantarChart"),{
+    type:'line',
+    data:{ labels:[], datasets:[] },
+    options:{ responsive:true, maintainAspectRatio:false }
 });
 
 function startMode(selectedMode){
@@ -185,8 +175,10 @@ function startMode(selectedMode){
 
     mode=selectedMode;
     running=true;
-    minVal=999;
-    maxVal=-999;
+
+    let timeLeft=duration;
+    let dataArray=[];
+    let labels=[];
 
     document.getElementById("statusText").innerText=
         "กำลังฝึก: "+mode.toUpperCase();
@@ -194,15 +186,9 @@ function startMode(selectedMode){
     document.getElementById("timerText").innerText=
         "เวลา: "+duration+" วิ";
 
-    realtimeChart.data.labels=[];
-    realtimeChart.data.datasets[0].data=[];
-    realtimeChart.update();
-
-    let timeLeft=duration;
-
     timer=setInterval(()=>{
 
-        // 🔥 เปลี่ยนตรงนี้เป็นค่า MPU จริงได้
+        // เปลี่ยนเป็นค่า MPU จริงได้ตรงนี้
         let x=(Math.random()*20-10).toFixed(2);
         let y=(Math.random()*20-10).toFixed(2);
         let z=(Math.random()*20-10).toFixed(2);
@@ -221,52 +207,46 @@ function startMode(selectedMode){
             document.getElementById("plantar").innerText=angle.toFixed(1)+"°";
         }
 
-        realtimeChart.data.labels.push(duration-timeLeft);
-        realtimeChart.data.datasets[0].data.push(angle);
-        realtimeChart.update();
-
-        if(angle<minVal) minVal=angle;
-        if(angle>maxVal) maxVal=angle;
+        labels.push(duration-timeLeft);
+        dataArray.push(angle);
 
         timeLeft--;
         document.getElementById("timerText").innerText=
             "เวลา: "+timeLeft+" วิ";
 
         if(timeLeft<=0){
-            stopMode();
+            stopMode(labels,dataArray);
         }
 
     },1000);
 }
 
-function stopMode(){
+function stopMode(labels,dataArray){
 
     clearInterval(timer);
     running=false;
 
-    let rom=(maxVal-minVal).toFixed(2);
+    let dataset={
+        label: mode+" Set "+(mode==="dorsi"?dorsiSet:plantarSet),
+        data:dataArray,
+        borderColor: colors[(mode==="dorsi"?dorsiSet:plantarSet)-1],
+        fill:false,
+        tension:0.3
+    };
 
     if(mode==="dorsi"){
-        romChart.data.datasets.push({
-            label:"Dorsi Set "+dorsiSet,
-            data:[rom],
-            backgroundColor:colors[dorsiSet-1]
-        });
+        dorsiChart.data.labels=labels;
+        dorsiChart.data.datasets.push(dataset);
+        dorsiChart.update();
         dorsiSet++;
-        document.getElementById("dorsiCount").innerText=
-            dorsiSet+" / 5";
+        document.getElementById("dorsiCount").innerText=dorsiSet+" / 5";
     }else{
-        romChart.data.datasets.push({
-            label:"Plantar Set "+plantarSet,
-            data:[rom],
-            backgroundColor:colors[plantarSet-1]
-        });
+        plantarChart.data.labels=labels;
+        plantarChart.data.datasets.push(dataset);
+        plantarChart.update();
         plantarSet++;
-        document.getElementById("plantarCount").innerText=
-            plantarSet+" / 5";
+        document.getElementById("plantarCount").innerText=plantarSet+" / 5";
     }
-
-    romChart.update();
 
     document.getElementById("statusText").innerText="เสร็จสิ้น";
     document.getElementById("timerText").innerText="เวลา: 0 วิ";
@@ -279,12 +259,10 @@ function stopMode(){
 }
 
 function toggleMode(){
-    let body=document.body;
-    body.classList.toggle("dark");
-    body.classList.toggle("light");
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
 }
 
 </script>
-
 </body>
 </html>
