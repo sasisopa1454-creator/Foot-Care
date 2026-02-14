@@ -19,7 +19,6 @@ body.dark{
 }
 
 h2{text-align:center;}
-
 .container{max-width:1100px;margin:auto;}
 
 .cards{display:flex;gap:20px;justify-content:center;margin-bottom:20px;}
@@ -32,68 +31,43 @@ h2{text-align:center;}
     box-shadow:0 4px 10px rgba(0,0,0,0.1);
     transition:0.3s;
 }
-body.dark .card{
-    background:#1e1e1e;
-}
+body.dark .card{background:#1e1e1e;}
 
-.big{font-size:28px;font-weight:bold;margin:10px 0;}
+.big{font-size:26px;font-weight:bold;margin:10px 0;}
 
 button{
     background:#007bff;color:white;border:none;
-    padding:8px 12px;border-radius:8px;cursor:pointer;
-    margin:5px;
+    padding:8px 12px;border-radius:8px;cursor:pointer;margin:5px;
 }
 button:hover{background:#0056b3;}
 
 .timer{text-align:center;font-size:24px;margin:20px 0;}
 
 .xyz-box{
-    display:flex;
-    gap:15px;
-    justify-content:center;
-    margin-top:10px;
+    display:flex;gap:15px;justify-content:center;margin-top:10px;
 }
-
 .xyz{
-    background:white;
-    padding:15px;
-    border-radius:10px;
+    background:white;padding:15px;border-radius:10px;
     box-shadow:0 4px 10px rgba(0,0,0,0.1);
-    width:100px;
-    text-align:center;
-    transition:0.3s;
+    width:100px;text-align:center;transition:0.3s;
 }
-body.dark .xyz{
-    background:#1e1e1e;
-}
+body.dark .xyz{background:#1e1e1e;}
 
-table{
-    width:100%;
-    border-collapse:collapse;
-    background:white;
-    margin-top:20px;
-    transition:0.3s;
-}
-body.dark table{
-    background:#1e1e1e;
-}
-th,td{
-    border:1px solid #ccc;
-    padding:10px;
+.summary-values{
     text-align:center;
+    margin-top:30px;
+    font-size:18px;
+    font-weight:bold;
 }
-th{background:#007bff;color:white;}
 
 canvas{
     background:white;
-    margin-top:30px;
+    margin-top:20px;
     padding:10px;
     border-radius:12px;
     transition:0.3s;
 }
-body.dark canvas{
-    background:#1e1e1e;
-}
+body.dark canvas{background:#1e1e1e;}
 </style>
 </head>
 
@@ -109,13 +83,13 @@ body.dark canvas{
     <div class="card">
         <div>Dorsi</div>
         <div class="big" id="dorsiVal">0</div>
-        <button onclick="startDorsi()">Start Dorsi</button>
+        <button onclick="startTraining('dorsi')">Start Dorsi</button>
     </div>
 
     <div class="card">
         <div>Plantar</div>
         <div class="big" id="plantarVal">0</div>
-        <button onclick="startPlantar()">Start Plantar</button>
+        <button onclick="startTraining('plantar')">Start Plantar</button>
     </div>
 </div>
 
@@ -129,26 +103,19 @@ body.dark canvas{
 ⏱️ เวลา: <span id="timer">30</span> วินาที
 </div>
 
-<table>
-<thead>
-<tr>
-<th>เซท</th>
-<th>Dorsi Max</th>
-<th>Plantar Max</th>
-<th>ROM</th>
-</tr>
-</thead>
-<tbody id="resultTable">
-<tr><td>1</td><td>-</td><td>-</td><td>-</td></tr>
-<tr><td>2</td><td>-</td><td>-</td><td>-</td></tr>
-<tr><td>3</td><td>-</td><td>-</td><td>-</td></tr>
-<tr><td>4</td><td>-</td><td>-</td><td>-</td></tr>
-<tr><td>5</td><td>-</td><td>-</td><td>-</td></tr>
-</tbody>
-</table>
+<!-- ค่าสรุป -->
+<div class="summary-values">
+เซตล่าสุด → 
+Dorsi Max: <span id="sumDorsi">0</span> | 
+Plantar Max: <span id="sumPlantar">0</span> | 
+ROM: <span id="sumROM">0</span>
+</div>
 
+<!-- กราฟ Real-time -->
 <canvas id="liveChart" height="120"></canvas>
-<canvas id="summaryChart" height="120"></canvas>
+
+<!-- กราฟรวมทุกเซต -->
+<canvas id="summaryChart" height="140"></canvas>
 
 </div>
 
@@ -159,7 +126,10 @@ let plantarVal=document.getElementById("plantarVal");
 let xVal=document.getElementById("xVal");
 let yVal=document.getElementById("yVal");
 let zVal=document.getElementById("zVal");
-let table=document.getElementById("resultTable");
+
+let sumDorsi=document.getElementById("sumDorsi");
+let sumPlantar=document.getElementById("sumPlantar");
+let sumROM=document.getElementById("sumROM");
 
 let interval;
 let timeLeft=30;
@@ -168,21 +138,20 @@ let currentSet=0;
 let maxDorsi=0;
 let maxPlantar=0;
 
+const colors=[
+"#ff6384","#36a2eb","#ffce56","#4bc0c0","#9966ff"
+];
+
 const liveChart=new Chart(document.getElementById("liveChart"),{
     type:"line",
     data:{labels:[],datasets:[
-        {label:"Dorsi",data:[],borderWidth:2},
-        {label:"Plantar",data:[],borderWidth:2}
+        {label:"Value",data:[],borderWidth:2}
     ]}
 });
 
 const summaryChart=new Chart(document.getElementById("summaryChart"),{
     type:"bar",
-    data:{labels:[],datasets:[
-        {label:"Dorsi Max",data:[],borderWidth:1},
-        {label:"Plantar Max",data:[],borderWidth:1},
-        {label:"ROM",data:[],borderWidth:1}
-    ]}
+    data:{labels:[],datasets:[]}
 });
 
 function toggleDarkMode(){
@@ -198,7 +167,6 @@ function resetXYZ(){
 function clearLiveChart(){
     liveChart.data.labels=[];
     liveChart.data.datasets[0].data=[];
-    liveChart.data.datasets[1].data=[];
     liveChart.update();
 }
 
@@ -214,19 +182,11 @@ function simulateMPU(){
     return {x,y,z};
 }
 
-function startDorsi(){
-    runTraining("dorsi");
-}
-
-function startPlantar(){
-    runTraining("plantar");
-}
-
-function runTraining(type){
+function startTraining(type){
     if(currentSet>=5) return;
 
     clearInterval(interval);
-    clearLiveChart();   // 🔥 ลบกราฟก่อนเริ่มใหม่
+    clearLiveChart();
 
     timeLeft=30;
     timerEl.innerText=timeLeft;
@@ -244,27 +204,17 @@ function runTraining(type){
         if(type==="dorsi"){
             dorsiVal.innerText=value.toFixed(1);
             if(Math.abs(value)>maxDorsi) maxDorsi=Math.abs(value);
-        }
-
-        if(type==="plantar"){
+        }else{
             plantarVal.innerText=value.toFixed(1);
             if(Math.abs(value)>maxPlantar) maxPlantar=Math.abs(value);
         }
 
         liveChart.data.labels.push(30-timeLeft);
-        if(type==="dorsi"){
-            liveChart.data.datasets[0].data.push(value);
-            liveChart.data.datasets[1].data.push(null);
-        }else{
-            liveChart.data.datasets[0].data.push(null);
-            liveChart.data.datasets[1].data.push(value);
-        }
-
+        liveChart.data.datasets[0].data.push(value);
         liveChart.update();
 
         if(timeLeft<=0){
             clearInterval(interval);
-            clearLiveChart();   // 🔥 ลบหลังจบ
             finishSet();
         }
     },1000);
@@ -273,14 +223,20 @@ function runTraining(type){
 function finishSet(){
     let rom=maxDorsi+maxPlantar;
 
-    table.rows[currentSet].cells[1].innerText=maxDorsi.toFixed(1);
-    table.rows[currentSet].cells[2].innerText=maxPlantar.toFixed(1);
-    table.rows[currentSet].cells[3].innerText=rom.toFixed(1);
+    // แสดงค่าด้านบนกราฟ
+    sumDorsi.innerText=maxDorsi.toFixed(1);
+    sumPlantar.innerText=maxPlantar.toFixed(1);
+    sumROM.innerText=rom.toFixed(1);
 
-    summaryChart.data.labels.push("เซท "+(currentSet+1));
-    summaryChart.data.datasets[0].data.push(maxDorsi);
-    summaryChart.data.datasets[1].data.push(maxPlantar);
-    summaryChart.data.datasets[2].data.push(rom);
+    // เพิ่มกราฟใหม่แต่ละเซตคนละสี
+    summaryChart.data.labels=["Dorsi Max","Plantar Max","ROM"];
+
+    summaryChart.data.datasets.push({
+        label:"เซต "+(currentSet+1),
+        data:[maxDorsi,maxPlantar,rom],
+        backgroundColor:colors[currentSet]
+    });
+
     summaryChart.update();
 
     currentSet++;
