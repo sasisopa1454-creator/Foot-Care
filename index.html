@@ -3,8 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>Foot Care Training</title>
-
-<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -17,7 +15,7 @@ body{
 h2{text-align:center;}
 
 .container{
-    max-width:1100px;
+    max-width:1000px;
     margin:auto;
 }
 
@@ -26,7 +24,6 @@ h2{text-align:center;}
     gap:20px;
     justify-content:center;
     margin-bottom:20px;
-    flex-wrap:wrap;
 }
 
 .card{
@@ -39,14 +36,9 @@ h2{text-align:center;}
 }
 
 .big{
-    font-size:32px;
+    font-size:28px;
     font-weight:bold;
     margin:10px 0;
-}
-
-.card b{
-    font-size:22px;
-    color:#007bff;
 }
 
 button{
@@ -61,7 +53,7 @@ button:hover{background:#0056b3;}
 
 .timer{
     text-align:center;
-    font-size:28px;
+    font-size:24px;
     margin:20px 0;
 }
 
@@ -94,35 +86,22 @@ canvas{
 <div class="container">
 <h2>Foot Care Training</h2>
 
+<!-- การ์ด -->
 <div class="cards">
-
-    <!-- Dorsi -->
     <div class="card">
         <div>ยกเท้า (Dorsi)</div>
         <div class="big"><span id="dorsiSet">0</span> / 5</div>
         <button onclick="startSet('dorsi')">เริ่มยกเท้า</button>
     </div>
 
-    <!-- Plantar -->
     <div class="card">
         <div>เหยียดเท้า (Plantar)</div>
         <div class="big"><span id="plantarSet">0</span> / 5</div>
         <button onclick="startSet('plantar')">เริ่มเหยียดเท้า</button>
     </div>
-
-    <!-- XYZ Live -->
-    <div class="card">
-        <div>ค่าเซนเซอร์ (Live)</div>
-        <div style="margin-top:15px">
-            X: <b><span id="xValue">0</span></b><br><br>
-            Y: <b><span id="yValue">0</span></b><br><br>
-            Z: <b><span id="zValue">0</span></b>
-        </div>
-    </div>
-
 </div>
 
-<!-- Timer -->
+<!-- ตัวจับเวลา -->
 <div class="timer">
 ⏱️ เวลา: <span id="timer">30</span> วินาที
 </div>
@@ -146,28 +125,31 @@ canvas{
 </tbody>
 </table>
 
-<!-- กราฟ -->
+<!-- กราฟสรุปแต่ละเซท -->
+<h3 style="margin-top:40px;">กราฟสรุปผลแต่ละเซท</h3>
 <canvas id="chart" height="120"></canvas>
+
+<!-- กราฟ 30 วินาที -->
+<h3 style="margin-top:40px;">กราฟการเคลื่อนไหวภายใน 30 วินาที</h3>
+<canvas id="progressChart" height="120"></canvas>
 
 </div>
 
 <script>
 
-// ====== ตัวแปร ======
 let dorsiSet = 0;
 let plantarSet = 0;
 let timeLeft = 30;
 let timer;
 
-let liveDorsi = 0;
-let livePlantar = 0;
+let progressSecond = 0;
 
 const timerEl = document.getElementById("timer");
 const dorsiSetEl = document.getElementById("dorsiSet");
 const plantarSetEl = document.getElementById("plantarSet");
 const tableEl = document.getElementById("resultTable");
 
-// ====== Chart ======
+/* ----------------- กราฟสรุป ----------------- */
 const chart = new Chart(document.getElementById("chart"), {
     type: "line",
     data: {
@@ -177,11 +159,30 @@ const chart = new Chart(document.getElementById("chart"), {
             { label: "Plantar", data: [], borderWidth:2 },
             { label: "ROM", data: [], borderWidth:2 }
         ]
+    },
+    options:{animation:false}
+});
+
+/* ----------------- กราฟ 30 วินาที ----------------- */
+const progressChart = new Chart(document.getElementById("progressChart"), {
+    type: "line",
+    data: {
+        labels: [],
+        datasets: [
+            { label: "ROM ต่อวินาที", data: [], borderWidth:2 }
+        ]
+    },
+    options:{
+        animation:false,
+        scales:{
+            x:{ title:{display:true,text:"เวลา (วินาที)"} },
+            y:{ title:{display:true,text:"ค่า ROM"} }
+        }
     }
 });
 
-// ====== Timer ======
 function startSet(mode){
+
     if(mode==="dorsi" && dorsiSet>=5) return;
     if(mode==="plantar" && plantarSet>=5) return;
 
@@ -189,19 +190,37 @@ function startSet(mode){
     timeLeft = 30;
     timerEl.innerText = timeLeft;
 
+    progressSecond = 0;
+    progressChart.data.labels = [];
+    progressChart.data.datasets[0].data = [];
+    progressChart.update();
+
     timer = setInterval(()=>{
+
         timeLeft--;
         timerEl.innerText = timeLeft;
+
+        // 🔹 จำลองค่า ROM ต่อวินาที
+        let romNow = Math.floor(Math.random()*50);
+
+        progressChart.data.labels.push(progressSecond);
+        progressChart.data.datasets[0].data.push(romNow);
+        progressChart.update();
+
+        progressSecond++;
 
         if(timeLeft<=0){
             clearInterval(timer);
             finishSet(mode);
         }
+
     },1000);
 }
 
-// ====== Finish Set ======
 function finishSet(mode){
+
+    let dorsi = Math.floor(Math.random()*20)+10;
+    let plantar = Math.floor(Math.random()*30)+20;
 
     let rowIndex;
 
@@ -209,22 +228,23 @@ function finishSet(mode){
         dorsiSet++;
         dorsiSetEl.innerText = dorsiSet;
         rowIndex = dorsiSet-1;
-        tableEl.rows[rowIndex].cells[1].innerText = liveDorsi.toFixed(1);
+        tableEl.rows[rowIndex].cells[1].innerText = dorsi;
     }
 
     if(mode==="plantar"){
         plantarSet++;
         plantarSetEl.innerText = plantarSet;
         rowIndex = plantarSet-1;
-        tableEl.rows[rowIndex].cells[2].innerText = livePlantar.toFixed(1);
+        tableEl.rows[rowIndex].cells[2].innerText = plantar;
     }
 
-    let dVal = parseFloat(tableEl.rows[rowIndex].cells[1].innerText);
-    let pVal = parseFloat(tableEl.rows[rowIndex].cells[2].innerText);
+    let dVal = tableEl.rows[rowIndex].cells[1].innerText;
+    let pVal = tableEl.rows[rowIndex].cells[2].innerText;
 
-    if(!isNaN(dVal) && !isNaN(pVal)){
-        let rom = Math.abs(pVal) + Math.abs(dVal);
-        tableEl.rows[rowIndex].cells[3].innerText = rom.toFixed(1);
+    if(dVal!=="-" && pVal!=="-"){
+
+        let rom = pVal - dVal;
+        tableEl.rows[rowIndex].cells[3].innerText = rom;
 
         chart.data.labels.push("เซท "+(rowIndex+1));
         chart.data.datasets[0].data.push(dVal);
@@ -235,40 +255,6 @@ function finishSet(mode){
 }
 
 </script>
-
-<!-- ===== Firebase ===== -->
-<script type="module">
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyArB39e1jNG71QNBrSDGoXzQk7o4HE9SfM",
-  databaseURL: "https://foot-care-15028-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "foot-care-15028",
-  appId: "1:568507097776:web:5ecd08c79da53ed42f1175"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-const liveRef = ref(db, "live");
-
-onValue(liveRef, (snapshot) => {
-  const data = snapshot.val();
-
-  if(data){
-    liveDorsi = data.dorsi ?? 0;
-    livePlantar = data.plantar ?? 0;
-
-    document.getElementById("xValue").innerText = liveDorsi.toFixed(1);
-    document.getElementById("yValue").innerText = livePlantar.toFixed(1);
-    document.getElementById("zValue").innerText = (data.angleZ ?? 0).toFixed(1);
-  }
-});
-
-</script>
-
 </body>
 </html>
 
