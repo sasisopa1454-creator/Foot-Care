@@ -6,8 +6,20 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body{font-family:Arial;background:#f4f6f8;margin:0;padding:20px;}
+body{
+    font-family:Arial;
+    background:#f4f6f8;
+    margin:0;
+    padding:20px;
+    transition:0.3s;
+}
+body.dark{
+    background:#121212;
+    color:white;
+}
+
 h2{text-align:center;}
+
 .container{max-width:1100px;margin:auto;}
 
 .cards{display:flex;gap:20px;justify-content:center;margin-bottom:20px;}
@@ -18,7 +30,12 @@ h2{text-align:center;}
     width:200px;
     text-align:center;
     box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    transition:0.3s;
 }
+body.dark .card{
+    background:#1e1e1e;
+}
+
 .big{font-size:28px;font-weight:bold;margin:10px 0;}
 
 button{
@@ -44,6 +61,10 @@ button:hover{background:#0056b3;}
     box-shadow:0 4px 10px rgba(0,0,0,0.1);
     width:100px;
     text-align:center;
+    transition:0.3s;
+}
+body.dark .xyz{
+    background:#1e1e1e;
 }
 
 table{
@@ -51,6 +72,10 @@ table{
     border-collapse:collapse;
     background:white;
     margin-top:20px;
+    transition:0.3s;
+}
+body.dark table{
+    background:#1e1e1e;
 }
 th,td{
     border:1px solid #ccc;
@@ -64,6 +89,10 @@ canvas{
     margin-top:30px;
     padding:10px;
     border-radius:12px;
+    transition:0.3s;
+}
+body.dark canvas{
+    background:#1e1e1e;
 }
 </style>
 </head>
@@ -71,6 +100,10 @@ canvas{
 <body>
 <div class="container">
 <h2>Foot Care Training</h2>
+
+<div style="text-align:center;margin-bottom:20px;">
+<button onclick="toggleDarkMode()">🌙 Dark Mode</button>
+</div>
 
 <div class="cards">
     <div class="card">
@@ -152,10 +185,21 @@ const summaryChart=new Chart(document.getElementById("summaryChart"),{
     ]}
 });
 
+function toggleDarkMode(){
+    document.body.classList.toggle("dark");
+}
+
 function resetXYZ(){
     xVal.innerText=0;
     yVal.innerText=0;
     zVal.innerText=0;
+}
+
+function clearLiveChart(){
+    liveChart.data.labels=[];
+    liveChart.data.datasets[0].data=[];
+    liveChart.data.datasets[1].data=[];
+    liveChart.update();
 }
 
 function simulateMPU(){
@@ -182,18 +226,19 @@ function runTraining(type){
     if(currentSet>=5) return;
 
     clearInterval(interval);
+    clearLiveChart();   // 🔥 ลบกราฟก่อนเริ่มใหม่
+
     timeLeft=30;
     timerEl.innerText=timeLeft;
 
-    if(type==="dorsi") maxDorsi=0;
-    if(type==="plantar") maxPlantar=0;
+    maxDorsi=0;
+    maxPlantar=0;
 
     interval=setInterval(()=>{
         timeLeft--;
         timerEl.innerText=timeLeft;
 
         let {x,y,z}=simulateMPU();
-
         let value=(type==="dorsi")?x:y;
 
         if(type==="dorsi"){
@@ -206,7 +251,7 @@ function runTraining(type){
             if(Math.abs(value)>maxPlantar) maxPlantar=Math.abs(value);
         }
 
-        liveChart.data.labels.push(liveChart.data.labels.length);
+        liveChart.data.labels.push(30-timeLeft);
         if(type==="dorsi"){
             liveChart.data.datasets[0].data.push(value);
             liveChart.data.datasets[1].data.push(null);
@@ -219,6 +264,7 @@ function runTraining(type){
 
         if(timeLeft<=0){
             clearInterval(interval);
+            clearLiveChart();   // 🔥 ลบหลังจบ
             finishSet();
         }
     },1000);
@@ -244,4 +290,3 @@ function finishSet(){
 
 </body>
 </html>
-
