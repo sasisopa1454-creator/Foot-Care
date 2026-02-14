@@ -26,7 +26,7 @@ h2{text-align:center;}
     background:white;
     border-radius:12px;
     padding:20px;
-    width:200px;
+    width:220px;
     text-align:center;
     box-shadow:0 4px 10px rgba(0,0,0,0.1);
     transition:0.3s;
@@ -52,6 +52,13 @@ button:hover{background:#0056b3;}
     width:100px;text-align:center;transition:0.3s;
 }
 body.dark .xyz{background:#1e1e1e;}
+
+.status{
+    text-align:center;
+    font-size:20px;
+    font-weight:bold;
+    margin-top:10px;
+}
 
 .summary-values{
     text-align:center;
@@ -79,6 +86,10 @@ body.dark canvas{background:#1e1e1e;}
 <button onclick="toggleDarkMode()">🌙 Dark Mode</button>
 </div>
 
+<div class="status">
+เซตปัจจุบัน: <span id="currentSetText">1</span> / 5
+</div>
+
 <div class="cards">
     <div class="card">
         <div>Dorsi</div>
@@ -103,7 +114,6 @@ body.dark canvas{background:#1e1e1e;}
 ⏱️ เวลา: <span id="timer">30</span> วินาที
 </div>
 
-<!-- ค่าสรุป -->
 <div class="summary-values">
 เซตล่าสุด → 
 Dorsi Max: <span id="sumDorsi">0</span> | 
@@ -111,10 +121,7 @@ Plantar Max: <span id="sumPlantar">0</span> |
 ROM: <span id="sumROM">0</span>
 </div>
 
-<!-- กราฟ Real-time -->
 <canvas id="liveChart" height="120"></canvas>
-
-<!-- กราฟรวมทุกเซต -->
 <canvas id="summaryChart" height="140"></canvas>
 
 </div>
@@ -130,17 +137,15 @@ let zVal=document.getElementById("zVal");
 let sumDorsi=document.getElementById("sumDorsi");
 let sumPlantar=document.getElementById("sumPlantar");
 let sumROM=document.getElementById("sumROM");
+let currentSetText=document.getElementById("currentSetText");
 
 let interval;
 let timeLeft=30;
 let currentSet=0;
-
 let maxDorsi=0;
 let maxPlantar=0;
 
-const colors=[
-"#ff6384","#36a2eb","#ffce56","#4bc0c0","#9966ff"
-];
+const colors=["#ff6384","#36a2eb","#ffce56","#4bc0c0","#9966ff"];
 
 const liveChart=new Chart(document.getElementById("liveChart"),{
     type:"line",
@@ -151,7 +156,7 @@ const liveChart=new Chart(document.getElementById("liveChart"),{
 
 const summaryChart=new Chart(document.getElementById("summaryChart"),{
     type:"bar",
-    data:{labels:[],datasets:[]}
+    data:{labels:["Dorsi Max","Plantar Max","ROM"],datasets:[]}
 });
 
 function toggleDarkMode(){
@@ -183,7 +188,10 @@ function simulateMPU(){
 }
 
 function startTraining(type){
-    if(currentSet>=5) return;
+    if(currentSet>=5){
+        alert("ฝึกครบ 5 เซตแล้ว");
+        return;
+    }
 
     clearInterval(interval);
     clearLiveChart();
@@ -223,13 +231,9 @@ function startTraining(type){
 function finishSet(){
     let rom=maxDorsi+maxPlantar;
 
-    // แสดงค่าด้านบนกราฟ
     sumDorsi.innerText=maxDorsi.toFixed(1);
     sumPlantar.innerText=maxPlantar.toFixed(1);
     sumROM.innerText=rom.toFixed(1);
-
-    // เพิ่มกราฟใหม่แต่ละเซตคนละสี
-    summaryChart.data.labels=["Dorsi Max","Plantar Max","ROM"];
 
     summaryChart.data.datasets.push({
         label:"เซต "+(currentSet+1),
@@ -240,6 +244,8 @@ function finishSet(){
     summaryChart.update();
 
     currentSet++;
+    currentSetText.innerText=currentSet+1>5?5:currentSet+1;
+
     resetXYZ();
 }
 </script>
