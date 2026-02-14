@@ -17,7 +17,7 @@ body{
 h2{text-align:center;}
 
 .container{
-    max-width:900px;
+    max-width:1100px;
     margin:auto;
 }
 
@@ -26,13 +26,14 @@ h2{text-align:center;}
     gap:20px;
     justify-content:center;
     margin-bottom:20px;
+    flex-wrap:wrap;
 }
 
 .card{
     background:white;
     border-radius:12px;
     padding:20px;
-    width:200px;
+    width:220px;
     text-align:center;
     box-shadow:0 4px 10px rgba(0,0,0,0.1);
 }
@@ -41,6 +42,11 @@ h2{text-align:center;}
     font-size:32px;
     font-weight:bold;
     margin:10px 0;
+}
+
+.card b{
+    font-size:22px;
+    color:#007bff;
 }
 
 button{
@@ -57,12 +63,6 @@ button:hover{background:#0056b3;}
     text-align:center;
     font-size:28px;
     margin:20px 0;
-}
-
-.xyz{
-    text-align:center;
-    font-size:20px;
-    margin-bottom:20px;
 }
 
 table{
@@ -94,31 +94,37 @@ canvas{
 <div class="container">
 <h2>Foot Care Training</h2>
 
-<!-- การ์ด -->
 <div class="cards">
+
+    <!-- Dorsi -->
     <div class="card">
         <div>ยกเท้า (Dorsi)</div>
         <div class="big"><span id="dorsiSet">0</span> / 5</div>
         <button onclick="startSet('dorsi')">เริ่มยกเท้า</button>
     </div>
 
+    <!-- Plantar -->
     <div class="card">
         <div>เหยียดเท้า (Plantar)</div>
         <div class="big"><span id="plantarSet">0</span> / 5</div>
         <button onclick="startSet('plantar')">เริ่มเหยียดเท้า</button>
     </div>
+
+    <!-- XYZ Live -->
+    <div class="card">
+        <div>ค่าเซนเซอร์ (Live)</div>
+        <div style="margin-top:15px">
+            X: <b><span id="xValue">0</span></b><br><br>
+            Y: <b><span id="yValue">0</span></b><br><br>
+            Z: <b><span id="zValue">0</span></b>
+        </div>
+    </div>
+
 </div>
 
-<!-- ตัวจับเวลา -->
+<!-- Timer -->
 <div class="timer">
 ⏱️ เวลา: <span id="timer">30</span> วินาที
-</div>
-
-<!-- แสดงค่า X Y Z จาก ESP32 -->
-<div class="xyz">
-X: <span id="xValue">0</span> |
-Y: <span id="yValue">0</span> |
-Z: <span id="zValue">0</span>
 </div>
 
 <!-- ตาราง -->
@@ -145,36 +151,23 @@ Z: <span id="zValue">0</span>
 
 </div>
 
-<script type="module">
+<script>
 
-// ================= Firebase =================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyArB39e1jNG71QNBrSDGoXzQk7o4HE9SfM",
-  databaseURL: "https://foot-care-15028-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "foot-care-15028",
-  appId: "1:568507097776:web:5ecd08c79da53ed42f1175"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-const liveRef = ref(db, "live");
-
-// ================= ตัวแปร =================
+// ====== ตัวแปร ======
 let dorsiSet = 0;
 let plantarSet = 0;
 let timeLeft = 30;
 let timer;
+
+let liveDorsi = 0;
+let livePlantar = 0;
 
 const timerEl = document.getElementById("timer");
 const dorsiSetEl = document.getElementById("dorsiSet");
 const plantarSetEl = document.getElementById("plantarSet");
 const tableEl = document.getElementById("resultTable");
 
-// ================= กราฟ =================
+// ====== Chart ======
 const chart = new Chart(document.getElementById("chart"), {
     type: "line",
     data: {
@@ -187,19 +180,8 @@ const chart = new Chart(document.getElementById("chart"), {
     }
 });
 
-// ================= Firebase Live =================
-onValue(liveRef, (snapshot) => {
-  const data = snapshot.val();
-  if(data){
-    document.getElementById("xValue").innerText = data.dorsi ?? 0;
-    document.getElementById("yValue").innerText = data.plantar ?? 0;
-    document.getElementById("zValue").innerText = data.angleZ ?? 0;
-  }
-});
-
-// ================= Timer =================
-window.startSet = function(mode){
-
+// ====== Timer ======
+function startSet(mode){
     if(mode==="dorsi" && dorsiSet>=5) return;
     if(mode==="plantar" && plantarSet>=5) return;
 
@@ -218,10 +200,8 @@ window.startSet = function(mode){
     },1000);
 }
 
+// ====== Finish Set ======
 function finishSet(mode){
-
-    let dorsi = parseFloat(document.getElementById("xValue").innerText);
-    let plantar = parseFloat(document.getElementById("yValue").innerText);
 
     let rowIndex;
 
@@ -229,21 +209,21 @@ function finishSet(mode){
         dorsiSet++;
         dorsiSetEl.innerText = dorsiSet;
         rowIndex = dorsiSet-1;
-        tableEl.rows[rowIndex].cells[1].innerText = dorsi.toFixed(1);
+        tableEl.rows[rowIndex].cells[1].innerText = liveDorsi.toFixed(1);
     }
 
     if(mode==="plantar"){
         plantarSet++;
         plantarSetEl.innerText = plantarSet;
         rowIndex = plantarSet-1;
-        tableEl.rows[rowIndex].cells[2].innerText = plantar.toFixed(1);
+        tableEl.rows[rowIndex].cells[2].innerText = livePlantar.toFixed(1);
     }
 
-    let dVal = tableEl.rows[rowIndex].cells[1].innerText;
-    let pVal = tableEl.rows[rowIndex].cells[2].innerText;
+    let dVal = parseFloat(tableEl.rows[rowIndex].cells[1].innerText);
+    let pVal = parseFloat(tableEl.rows[rowIndex].cells[2].innerText);
 
-    if(dVal!=="-" && pVal!=="-"){
-        let rom = Math.abs(parseFloat(dVal)) + Math.abs(parseFloat(pVal));
+    if(!isNaN(dVal) && !isNaN(pVal)){
+        let rom = Math.abs(pVal) + Math.abs(dVal);
         tableEl.rows[rowIndex].cells[3].innerText = rom.toFixed(1);
 
         chart.data.labels.push("เซท "+(rowIndex+1));
@@ -256,11 +236,41 @@ function finishSet(mode){
 
 </script>
 
+<!-- ===== Firebase ===== -->
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyArB39e1jNG71QNBrSDGoXzQk7o4HE9SfM",
+  databaseURL: "https://foot-care-15028-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "foot-care-15028",
+  appId: "1:568507097776:web:5ecd08c79da53ed42f1175"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const liveRef = ref(db, "live");
+
+onValue(liveRef, (snapshot) => {
+  const data = snapshot.val();
+
+  if(data){
+    liveDorsi = data.dorsi ?? 0;
+    livePlantar = data.plantar ?? 0;
+
+    document.getElementById("xValue").innerText = liveDorsi.toFixed(1);
+    document.getElementById("yValue").innerText = livePlantar.toFixed(1);
+    document.getElementById("zValue").innerText = (data.angleZ ?? 0).toFixed(1);
+  }
+});
+
+</script>
+
 </body>
 </html>
 
 
-</body>
-
-</html>
 
