@@ -84,6 +84,44 @@ canvas{
 </style>
 </head>
 
+</script>
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyArB39e1jNG71QNBrSDGoXzQk7o4HE9SfM",
+  databaseURL: "https://foot-care-15028-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "foot-care-15028",
+  appId: "1:568507097776:web:5ecd08c79da53ed42f1175"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ดึงข้อมูลจาก /live
+const liveRef = ref(db, "live");
+
+onValue(liveRef, (snapshot) => {
+  const data = snapshot.val();
+  console.log("Firebase:", data);
+
+  if(data){
+
+    // แสดงค่า X Y Z (จาก ESP32)
+    if(document.getElementById("xValue"))
+      document.getElementById("xValue").innerText = data.dorsi ?? 0;
+
+    if(document.getElementById("yValue"))
+      document.getElementById("yValue").innerText = data.plantar ?? 0;
+
+    if(document.getElementById("zValue"))
+      document.getElementById("zValue").innerText = data.angleZ ?? 0;
+
+  }
+});
+
 <body>
 <div class="container">
 <h2>Foot Care Training</h2>
@@ -214,4 +252,5 @@ function finishSet(mode){
 </script>
 
 </body>
+
 </html>
