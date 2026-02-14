@@ -16,7 +16,7 @@ body{
 h2{text-align:center;}
 
 .container{
-    max-width:1000px;
+    max-width:1100px;
     margin:auto;
 }
 
@@ -87,7 +87,9 @@ canvas{
 <div class="container">
 <h2>Foot Care Training</h2>
 
+<!-- การ์ด -->
 <div class="cards">
+
     <div class="card">
         <div>ยกเท้า (Dorsi)</div>
         <div class="big"><span id="dorsiSet">0</span> / 5</div>
@@ -99,12 +101,23 @@ canvas{
         <div class="big"><span id="plantarSet">0</span> / 5</div>
         <button onclick="startSet('plantar')">เริ่มเหยียดเท้า</button>
     </div>
+
+    <!-- กล่อง X Y Z -->
+    <div class="card">
+        <div><b>ค่าเซนเซอร์ (MPU6050)</b></div>
+        <div style="margin-top:10px">X: <span id="xValue">0</span></div>
+        <div>Y: <span id="yValue">0</span></div>
+        <div>Z: <span id="zValue">0</span></div>
+    </div>
+
 </div>
 
+<!-- ตัวจับเวลา -->
 <div class="timer">
 ⏱️ เวลา: <span id="timer">30</span> วินาที
 </div>
 
+<!-- ตาราง -->
 <table>
 <thead>
 <tr>
@@ -122,11 +135,8 @@ canvas{
 </tbody>
 </table>
 
-<h3 style="text-align:center;margin-top:40px;">กราฟสรุปผลแต่ละเซท</h3>
-<canvas id="summaryChart" height="120"></canvas>
-
-<h3 style="text-align:center;margin-top:40px;">กราฟการเคลื่อนไหวใน 30 วินาที</h3>
-<canvas id="progressChart" height="120"></canvas>
+<!-- กราฟ -->
+<canvas id="chart" height="120"></canvas>
 
 </div>
 
@@ -142,7 +152,12 @@ const dorsiSetEl = document.getElementById("dorsiSet");
 const plantarSetEl = document.getElementById("plantarSet");
 const tableEl = document.getElementById("resultTable");
 
-const summaryChart = new Chart(document.getElementById("summaryChart"), {
+const xEl = document.getElementById("xValue");
+const yEl = document.getElementById("yValue");
+const zEl = document.getElementById("zValue");
+
+// สร้างกราฟ
+const chart = new Chart(document.getElementById("chart"), {
     type: "line",
     data: {
         labels: [],
@@ -153,57 +168,27 @@ const summaryChart = new Chart(document.getElementById("summaryChart"), {
     }
 });
 
-const progressChart = new Chart(document.getElementById("progressChart"), {
-    type: "line",
-    data: {
-        labels: [],
-        datasets: [
-            { label: "Dorsi ต่อวินาที", data: [], borderWidth:2 },
-            { label: "Plantar ต่อวินาที", data: [], borderWidth:2 }
-        ]
-    }
-});
-
+// เริ่มเซท
 function startSet(mode){
-
     if(mode==="dorsi" && dorsiSet>=5) return;
     if(mode==="plantar" && plantarSet>=5) return;
 
     clearInterval(timer);
-
     timeLeft = 30;
     timerEl.innerText = timeLeft;
 
-    progressChart.data.labels = [];
-    progressChart.data.datasets[0].data = [];
-    progressChart.data.datasets[1].data = [];
-    progressChart.update();
-
-    let second = 0;
-
     timer = setInterval(()=>{
-
         timeLeft--;
-        second++;
         timerEl.innerText = timeLeft;
-
-        // จำลองค่าต่อวินาที
-        let dorsiNow = Math.floor(Math.random()*20)+10;
-        let plantarNow = Math.floor(Math.random()*30)+20;
-
-        progressChart.data.labels.push(second);
-        progressChart.data.datasets[0].data.push(dorsiNow);
-        progressChart.data.datasets[1].data.push(plantarNow);
-        progressChart.update();
 
         if(timeLeft<=0){
             clearInterval(timer);
             finishSet(mode);
         }
-
     },1000);
 }
 
+// จบเซท
 function finishSet(mode){
 
     let dorsi = Math.floor(Math.random()*20)+10;
@@ -225,16 +210,22 @@ function finishSet(mode){
         tableEl.rows[rowIndex].cells[2].innerText = plantar;
     }
 
-    let dVal = tableEl.rows[rowIndex].cells[1].innerText;
-    let pVal = tableEl.rows[rowIndex].cells[2].innerText;
-
-    if(dVal!=="-" && pVal!=="-"){
-        summaryChart.data.labels.push("เซท "+(rowIndex+1));
-        summaryChart.data.datasets[0].data.push(dVal);
-        summaryChart.data.datasets[1].data.push(pVal);
-        summaryChart.update();
-    }
+    chart.data.labels.push("เซท "+(rowIndex+1));
+    chart.data.datasets[0].data.push(dorsi);
+    chart.data.datasets[1].data.push(plantar);
+    chart.update();
 }
+
+// จำลองค่า X Y Z ทุก 1 วินาที
+setInterval(()=>{
+    let x = (Math.random()*2-1).toFixed(2);
+    let y = (Math.random()*2-1).toFixed(2);
+    let z = (Math.random()*2-1).toFixed(2);
+
+    xEl.innerText = x;
+    yEl.innerText = y;
+    zEl.innerText = z;
+},1000);
 
 </script>
 
