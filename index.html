@@ -3,58 +3,47 @@
 <head>
 <meta charset="UTF-8">
 <title>Foot Care Training</title>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body{
-    font-family: Arial, sans-serif;
-    background:#f4f6f8;
-    margin:0;
-    padding:20px;
-}
+body{font-family:Arial;background:#f4f6f8;margin:0;padding:20px;}
 h2{text-align:center;}
+.container{max-width:1100px;margin:auto;}
 
-.container{
-    max-width:1000px;
-    margin:auto;
-}
-
-.cards{
-    display:flex;
-    gap:20px;
-    justify-content:center;
-    margin-bottom:20px;
-}
-
+.cards{display:flex;gap:20px;justify-content:center;margin-bottom:20px;}
 .card{
     background:white;
     border-radius:12px;
     padding:20px;
-    width:200px;
+    width:180px;
     text-align:center;
     box-shadow:0 4px 10px rgba(0,0,0,0.1);
 }
-
-.big{
-    font-size:28px;
-    font-weight:bold;
-    margin:10px 0;
-}
+.big{font-size:28px;font-weight:bold;margin:10px 0;}
 
 button{
-    background:#007bff;
-    color:white;
-    border:none;
-    padding:10px 15px;
-    border-radius:8px;
-    cursor:pointer;
+    background:#007bff;color:white;border:none;
+    padding:10px 15px;border-radius:8px;cursor:pointer;
 }
 button:hover{background:#0056b3;}
 
-.timer{
+.timer{text-align:center;font-size:28px;margin:20px 0;}
+
+.xyz-box{
+    display:flex;
+    gap:15px;
+    justify-content:center;
+    margin-top:10px;
+}
+
+.xyz{
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    width:100px;
     text-align:center;
-    font-size:26px;
-    margin:20px 0;
 }
 
 table{
@@ -68,10 +57,7 @@ th,td{
     padding:10px;
     text-align:center;
 }
-th{
-    background:#007bff;
-    color:white;
-}
+th{background:#007bff;color:white;}
 
 canvas{
     background:white;
@@ -87,152 +73,160 @@ canvas{
 <h2>Foot Care Training</h2>
 
 <div class="cards">
-
     <div class="card">
-        <div>ยกเท้า (Dorsi)</div>
-        <div class="big"><span id="dorsiSet">0</span> / 5</div>
-        <button onclick="startSet('dorsi')">เริ่มยกเท้า</button>
+        <div>Dorsi</div>
+        <div class="big" id="dorsiVal">0</div>
     </div>
 
     <div class="card">
-        <div>เหยียดเท้า (Plantar)</div>
-        <div class="big"><span id="plantarSet">0</span> / 5</div>
-        <button onclick="startSet('plantar')">เริ่มเหยียดเท้า</button>
+        <div>Plantar</div>
+        <div class="big" id="plantarVal">0</div>
     </div>
+</div>
 
-    <!-- 🔥 กล่อง X Y Z -->
-    <div class="card">
-        <div>X</div>
-        <div class="big" id="xValue">0</div>
-        <div>Y</div>
-        <div class="big" id="yValue">0</div>
-        <div>Z</div>
-        <div class="big" id="zValue">0</div>
-    </div>
-
+<!-- X Y Z -->
+<div class="xyz-box">
+    <div class="xyz">X<br><span id="xVal">0</span></div>
+    <div class="xyz">Y<br><span id="yVal">0</span></div>
+    <div class="xyz">Z<br><span id="zVal">0</span></div>
 </div>
 
 <div class="timer">
 ⏱️ เวลา: <span id="timer">30</span> วินาที
+<br><br>
+<button onclick="startTraining()">เริ่ม</button>
 </div>
 
 <table>
 <thead>
 <tr>
 <th>เซท</th>
-<th>Dorsi</th>
-<th>Plantar</th>
+<th>Dorsi Max</th>
+<th>Plantar Max</th>
+<th>ROM</th>
 </tr>
 </thead>
 <tbody id="resultTable">
-<tr><td>1</td><td>-</td><td>-</td></tr>
-<tr><td>2</td><td>-</td><td>-</td></tr>
-<tr><td>3</td><td>-</td><td>-</td></tr>
-<tr><td>4</td><td>-</td><td>-</td></tr>
-<tr><td>5</td><td>-</td><td>-</td></tr>
+<tr><td>1</td><td>-</td><td>-</td><td>-</td></tr>
+<tr><td>2</td><td>-</td><td>-</td><td>-</td></tr>
+<tr><td>3</td><td>-</td><td>-</td><td>-</td></tr>
+<tr><td>4</td><td>-</td><td>-</td><td>-</td></tr>
+<tr><td>5</td><td>-</td><td>-</td><td>-</td></tr>
 </tbody>
 </table>
 
-<canvas id="chart" height="120"></canvas>
+<canvas id="liveChart" height="120"></canvas>
+<canvas id="summaryChart" height="120"></canvas>
 
 </div>
 
 <script>
+let timerEl=document.getElementById("timer");
+let dorsiVal=document.getElementById("dorsiVal");
+let plantarVal=document.getElementById("plantarVal");
+let xVal=document.getElementById("xVal");
+let yVal=document.getElementById("yVal");
+let zVal=document.getElementById("zVal");
+let table=document.getElementById("resultTable");
 
-let dorsiSet = 0;
-let plantarSet = 0;
-let timeLeft = 30;
-let timer;
-let sensorInterval = null;
+let timeLeft=30;
+let interval;
+let currentSet=0;
 
-const timerEl = document.getElementById("timer");
-const dorsiSetEl = document.getElementById("dorsiSet");
-const plantarSetEl = document.getElementById("plantarSet");
-const tableEl = document.getElementById("resultTable");
+let maxDorsi=0;
+let maxPlantar=0;
 
-const xEl = document.getElementById("xValue");
-const yEl = document.getElementById("yValue");
-const zEl = document.getElementById("zValue");
-
-const chart = new Chart(document.getElementById("chart"), {
-    type: "line",
-    data: {
-        labels: [],
-        datasets: [
-            { label: "Dorsi", data: [], borderWidth:2 },
-            { label: "Plantar", data: [], borderWidth:2 }
-        ]
-    }
+const liveChart=new Chart(document.getElementById("liveChart"),{
+    type:"line",
+    data:{labels:[],datasets:[
+        {label:"Dorsi",data:[],borderWidth:2},
+        {label:"Plantar",data:[],borderWidth:2}
+    ]}
 });
 
-function startSet(mode){
+const summaryChart=new Chart(document.getElementById("summaryChart"),{
+    type:"bar",
+    data:{labels:[],datasets:[
+        {label:"Dorsi Max",data:[],borderWidth:1},
+        {label:"Plantar Max",data:[],borderWidth:1},
+        {label:"ROM",data:[],borderWidth:1}
+    ]}
+});
 
-    if(mode==="dorsi" && dorsiSet>=5) return;
-    if(mode==="plantar" && plantarSet>=5) return;
+function resetXYZ(){
+    xVal.innerText=0;
+    yVal.innerText=0;
+    zVal.innerText=0;
+    dorsiVal.innerText=0;
+    plantarVal.innerText=0;
+}
 
-    clearInterval(timer);
-    clearInterval(sensorInterval);
+function startTraining(){
+    if(currentSet>=5)return;
 
-    timeLeft = 30;
-    timerEl.innerText = timeLeft;
+    resetXYZ();
+    timeLeft=30;
+    timerEl.innerText=timeLeft;
+    maxDorsi=0;
+    maxPlantar=0;
 
-    // 🔥 เริ่มรันค่า X Y Z
-    sensorInterval = setInterval(()=>{
-        let x = (Math.random()*10).toFixed(1);
-        let y = (Math.random()*10).toFixed(1);
-        let z = (Math.random()*10).toFixed(1);
+    liveChart.data.labels=[];
+    liveChart.data.datasets[0].data=[];
+    liveChart.data.datasets[1].data=[];
+    liveChart.update();
 
-        xEl.innerText = x;
-        yEl.innerText = y;
-        zEl.innerText = z;
-    },500);
-
-    timer = setInterval(()=>{
+    interval=setInterval(()=>{
         timeLeft--;
-        timerEl.innerText = timeLeft;
+        timerEl.innerText=timeLeft;
+
+        // 🔥 ตรงนี้เอาค่า Firebase จริงมาแทนได้
+        let x=Math.random()*40-20;
+        let y=Math.random()*50-25;
+        let z=Math.random()*30-15;
+
+        let dorsi=x;
+        let plantar=y;
+
+        xVal.innerText=x.toFixed(1);
+        yVal.innerText=y.toFixed(1);
+        zVal.innerText=z.toFixed(1);
+
+        dorsiVal.innerText=dorsi.toFixed(1);
+        plantarVal.innerText=plantar.toFixed(1);
+
+        if(Math.abs(dorsi)>maxDorsi)maxDorsi=Math.abs(dorsi);
+        if(Math.abs(plantar)>maxPlantar)maxPlantar=Math.abs(plantar);
+
+        liveChart.data.labels.push(30-timeLeft);
+        liveChart.data.datasets[0].data.push(dorsi);
+        liveChart.data.datasets[1].data.push(plantar);
+        liveChart.update();
 
         if(timeLeft<=0){
-            clearInterval(timer);
-            clearInterval(sensorInterval);
-
-            // รีเซ็ต X Y Z
-            xEl.innerText = 0;
-            yEl.innerText = 0;
-            zEl.innerText = 0;
-
-            finishSet(mode);
+            clearInterval(interval);
+            finishSet();
         }
     },1000);
 }
 
-function finishSet(mode){
+function finishSet(){
+    let rom=maxDorsi+maxPlantar;
 
-    let dorsi = Math.floor(Math.random()*20)+10;
-    let plantar = Math.floor(Math.random()*30)+20;
+    table.rows[currentSet].cells[1].innerText=maxDorsi.toFixed(1);
+    table.rows[currentSet].cells[2].innerText=maxPlantar.toFixed(1);
+    table.rows[currentSet].cells[3].innerText=rom.toFixed(1);
 
-    let rowIndex;
+    summaryChart.data.labels.push("เซท "+(currentSet+1));
+    summaryChart.data.datasets[0].data.push(maxDorsi);
+    summaryChart.data.datasets[1].data.push(maxPlantar);
+    summaryChart.data.datasets[2].data.push(rom);
+    summaryChart.update();
 
-    if(mode==="dorsi"){
-        dorsiSet++;
-        dorsiSetEl.innerText = dorsiSet;
-        rowIndex = dorsiSet-1;
-        tableEl.rows[rowIndex].cells[1].innerText = dorsi;
-    }
-
-    if(mode==="plantar"){
-        plantarSet++;
-        plantarSetEl.innerText = plantarSet;
-        rowIndex = plantarSet-1;
-        tableEl.rows[rowIndex].cells[2].innerText = plantar;
-    }
-
-    chart.data.labels.push("เซท "+(rowIndex+1));
-    chart.data.datasets[0].data.push(dorsi);
-    chart.data.datasets[1].data.push(plantar);
-    chart.update();
+    currentSet++;
+    resetXYZ();
 }
-
 </script>
 
 </body>
 </html>
+
