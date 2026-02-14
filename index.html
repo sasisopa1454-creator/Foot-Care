@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>Foot Care Training</title>
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -16,7 +15,7 @@ body{
 h2{text-align:center;}
 
 .container{
-    max-width:1100px;
+    max-width:1000px;
     margin:auto;
 }
 
@@ -37,7 +36,7 @@ h2{text-align:center;}
 }
 
 .big{
-    font-size:32px;
+    font-size:28px;
     font-weight:bold;
     margin:10px 0;
 }
@@ -54,7 +53,7 @@ button:hover{background:#0056b3;}
 
 .timer{
     text-align:center;
-    font-size:28px;
+    font-size:26px;
     margin:20px 0;
 }
 
@@ -87,7 +86,6 @@ canvas{
 <div class="container">
 <h2>Foot Care Training</h2>
 
-<!-- การ์ด -->
 <div class="cards">
 
     <div class="card">
@@ -102,22 +100,22 @@ canvas{
         <button onclick="startSet('plantar')">เริ่มเหยียดเท้า</button>
     </div>
 
-    <!-- กล่อง X Y Z -->
+    <!-- 🔥 กล่อง X Y Z -->
     <div class="card">
-        <div><b>ค่าเซนเซอร์ (MPU6050)</b></div>
-        <div style="margin-top:10px">X: <span id="xValue">0</span></div>
-        <div>Y: <span id="yValue">0</span></div>
-        <div>Z: <span id="zValue">0</span></div>
+        <div>X</div>
+        <div class="big" id="xValue">0</div>
+        <div>Y</div>
+        <div class="big" id="yValue">0</div>
+        <div>Z</div>
+        <div class="big" id="zValue">0</div>
     </div>
 
 </div>
 
-<!-- ตัวจับเวลา -->
 <div class="timer">
 ⏱️ เวลา: <span id="timer">30</span> วินาที
 </div>
 
-<!-- ตาราง -->
 <table>
 <thead>
 <tr>
@@ -135,7 +133,6 @@ canvas{
 </tbody>
 </table>
 
-<!-- กราฟ -->
 <canvas id="chart" height="120"></canvas>
 
 </div>
@@ -146,6 +143,7 @@ let dorsiSet = 0;
 let plantarSet = 0;
 let timeLeft = 30;
 let timer;
+let sensorInterval = null;
 
 const timerEl = document.getElementById("timer");
 const dorsiSetEl = document.getElementById("dorsiSet");
@@ -156,7 +154,6 @@ const xEl = document.getElementById("xValue");
 const yEl = document.getElementById("yValue");
 const zEl = document.getElementById("zValue");
 
-// สร้างกราฟ
 const chart = new Chart(document.getElementById("chart"), {
     type: "line",
     data: {
@@ -168,14 +165,27 @@ const chart = new Chart(document.getElementById("chart"), {
     }
 });
 
-// เริ่มเซท
 function startSet(mode){
+
     if(mode==="dorsi" && dorsiSet>=5) return;
     if(mode==="plantar" && plantarSet>=5) return;
 
     clearInterval(timer);
+    clearInterval(sensorInterval);
+
     timeLeft = 30;
     timerEl.innerText = timeLeft;
+
+    // 🔥 เริ่มรันค่า X Y Z
+    sensorInterval = setInterval(()=>{
+        let x = (Math.random()*10).toFixed(1);
+        let y = (Math.random()*10).toFixed(1);
+        let z = (Math.random()*10).toFixed(1);
+
+        xEl.innerText = x;
+        yEl.innerText = y;
+        zEl.innerText = z;
+    },500);
 
     timer = setInterval(()=>{
         timeLeft--;
@@ -183,12 +193,18 @@ function startSet(mode){
 
         if(timeLeft<=0){
             clearInterval(timer);
+            clearInterval(sensorInterval);
+
+            // รีเซ็ต X Y Z
+            xEl.innerText = 0;
+            yEl.innerText = 0;
+            zEl.innerText = 0;
+
             finishSet(mode);
         }
     },1000);
 }
 
-// จบเซท
 function finishSet(mode){
 
     let dorsi = Math.floor(Math.random()*20)+10;
@@ -215,17 +231,6 @@ function finishSet(mode){
     chart.data.datasets[1].data.push(plantar);
     chart.update();
 }
-
-// จำลองค่า X Y Z ทุก 1 วินาที
-setInterval(()=>{
-    let x = (Math.random()*2-1).toFixed(2);
-    let y = (Math.random()*2-1).toFixed(2);
-    let z = (Math.random()*2-1).toFixed(2);
-
-    xEl.innerText = x;
-    yEl.innerText = y;
-    zEl.innerText = z;
-},1000);
 
 </script>
 
