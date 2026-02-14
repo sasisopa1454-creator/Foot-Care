@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Foot Care Training</title>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -30,13 +31,13 @@ h2{text-align:center;}
     background:white;
     border-radius:12px;
     padding:20px;
-    width:220px;
+    width:200px;
     text-align:center;
     box-shadow:0 4px 10px rgba(0,0,0,0.1);
 }
 
 .big{
-    font-size:28px;
+    font-size:32px;
     font-weight:bold;
     margin:10px 0;
 }
@@ -53,7 +54,7 @@ button:hover{background:#0056b3;}
 
 .timer{
     text-align:center;
-    font-size:24px;
+    font-size:28px;
     margin:20px 0;
 }
 
@@ -86,7 +87,6 @@ canvas{
 <div class="container">
 <h2>Foot Care Training</h2>
 
-<!-- การ์ด -->
 <div class="cards">
     <div class="card">
         <div>ยกเท้า (Dorsi)</div>
@@ -101,36 +101,31 @@ canvas{
     </div>
 </div>
 
-<!-- ตัวจับเวลา -->
 <div class="timer">
 ⏱️ เวลา: <span id="timer">30</span> วินาที
 </div>
 
-<!-- ตาราง -->
 <table>
 <thead>
 <tr>
 <th>เซท</th>
 <th>Dorsi</th>
 <th>Plantar</th>
-<th>ROM</th>
 </tr>
 </thead>
 <tbody id="resultTable">
-<tr><td>1</td><td>-</td><td>-</td><td>-</td></tr>
-<tr><td>2</td><td>-</td><td>-</td><td>-</td></tr>
-<tr><td>3</td><td>-</td><td>-</td><td>-</td></tr>
-<tr><td>4</td><td>-</td><td>-</td><td>-</td></tr>
-<tr><td>5</td><td>-</td><td>-</td><td>-</td></tr>
+<tr><td>1</td><td>-</td><td>-</td></tr>
+<tr><td>2</td><td>-</td><td>-</td></tr>
+<tr><td>3</td><td>-</td><td>-</td></tr>
+<tr><td>4</td><td>-</td><td>-</td></tr>
+<tr><td>5</td><td>-</td><td>-</td></tr>
 </tbody>
 </table>
 
-<!-- กราฟสรุปแต่ละเซท -->
-<h3 style="margin-top:40px;">กราฟสรุปผลแต่ละเซท</h3>
-<canvas id="chart" height="120"></canvas>
+<h3 style="text-align:center;margin-top:40px;">กราฟสรุปผลแต่ละเซท</h3>
+<canvas id="summaryChart" height="120"></canvas>
 
-<!-- กราฟ 30 วินาที -->
-<h3 style="margin-top:40px;">กราฟการเคลื่อนไหวภายใน 30 วินาที</h3>
+<h3 style="text-align:center;margin-top:40px;">กราฟการเคลื่อนไหวใน 30 วินาที</h3>
 <canvas id="progressChart" height="120"></canvas>
 
 </div>
@@ -142,42 +137,30 @@ let plantarSet = 0;
 let timeLeft = 30;
 let timer;
 
-let progressSecond = 0;
-
 const timerEl = document.getElementById("timer");
 const dorsiSetEl = document.getElementById("dorsiSet");
 const plantarSetEl = document.getElementById("plantarSet");
 const tableEl = document.getElementById("resultTable");
 
-/* ----------------- กราฟสรุป ----------------- */
-const chart = new Chart(document.getElementById("chart"), {
+const summaryChart = new Chart(document.getElementById("summaryChart"), {
     type: "line",
     data: {
         labels: [],
         datasets: [
             { label: "Dorsi", data: [], borderWidth:2 },
-            { label: "Plantar", data: [], borderWidth:2 },
-            { label: "ROM", data: [], borderWidth:2 }
+            { label: "Plantar", data: [], borderWidth:2 }
         ]
-    },
-    options:{animation:false}
+    }
 });
 
-/* ----------------- กราฟ 30 วินาที ----------------- */
 const progressChart = new Chart(document.getElementById("progressChart"), {
     type: "line",
     data: {
         labels: [],
         datasets: [
-            { label: "ROM ต่อวินาที", data: [], borderWidth:2 }
+            { label: "Dorsi ต่อวินาที", data: [], borderWidth:2 },
+            { label: "Plantar ต่อวินาที", data: [], borderWidth:2 }
         ]
-    },
-    options:{
-        animation:false,
-        scales:{
-            x:{ title:{display:true,text:"เวลา (วินาที)"} },
-            y:{ title:{display:true,text:"ค่า ROM"} }
-        }
     }
 });
 
@@ -187,27 +170,31 @@ function startSet(mode){
     if(mode==="plantar" && plantarSet>=5) return;
 
     clearInterval(timer);
+
     timeLeft = 30;
     timerEl.innerText = timeLeft;
 
-    progressSecond = 0;
     progressChart.data.labels = [];
     progressChart.data.datasets[0].data = [];
+    progressChart.data.datasets[1].data = [];
     progressChart.update();
+
+    let second = 0;
 
     timer = setInterval(()=>{
 
         timeLeft--;
+        second++;
         timerEl.innerText = timeLeft;
 
-        // 🔹 จำลองค่า ROM ต่อวินาที
-        let romNow = Math.floor(Math.random()*50);
+        // จำลองค่าต่อวินาที
+        let dorsiNow = Math.floor(Math.random()*20)+10;
+        let plantarNow = Math.floor(Math.random()*30)+20;
 
-        progressChart.data.labels.push(progressSecond);
-        progressChart.data.datasets[0].data.push(romNow);
+        progressChart.data.labels.push(second);
+        progressChart.data.datasets[0].data.push(dorsiNow);
+        progressChart.data.datasets[1].data.push(plantarNow);
         progressChart.update();
-
-        progressSecond++;
 
         if(timeLeft<=0){
             clearInterval(timer);
@@ -242,21 +229,14 @@ function finishSet(mode){
     let pVal = tableEl.rows[rowIndex].cells[2].innerText;
 
     if(dVal!=="-" && pVal!=="-"){
-
-        let rom = pVal - dVal;
-        tableEl.rows[rowIndex].cells[3].innerText = rom;
-
-        chart.data.labels.push("เซท "+(rowIndex+1));
-        chart.data.datasets[0].data.push(dVal);
-        chart.data.datasets[1].data.push(pVal);
-        chart.data.datasets[2].data.push(rom);
-        chart.update();
+        summaryChart.data.labels.push("เซท "+(rowIndex+1));
+        summaryChart.data.datasets[0].data.push(dVal);
+        summaryChart.data.datasets[1].data.push(pVal);
+        summaryChart.update();
     }
 }
 
 </script>
+
 </body>
 </html>
-
-
-
