@@ -14,34 +14,277 @@ body{
 }
 
 .light{ background:#f2f2f2; color:#000; }
-.dark{ background:#121212; color:#fff; }
+.dark{ background:#1e1e1e; color:#fff; }
 
 .wrapper{
     height:100vh;
     display:flex;
     flex-direction:column;
-    padding:8px;
+    padding:6px;
     box-sizing:border-box;
 }
 
-/* ===== TOP BAR (เล็ก + แนวนอน) ===== */
-.topBar{
+/* ===== TOP (เล็กลง) ===== */
+.top{
     display:flex;
-    justify-content:space-between;
+    justify-content:space-around;
     align-items:center;
-    height:15%;
-}
-
-.metrics{
-    display:flex;
-    gap:8px;
+    height:18%;
 }
 
 .box{
-    width:75px;
-    padding:4px;
+    border:1.5px solid #333;
     border-radius:6px;
-    text-align:center;
+    padding:5px;
+    width:75px;
     font-size:12px;
-    border:1px solid #444;
-   
+    text-align:center;
+    background:white;
+    transition:0.3s;
+}
+
+.dark .box{
+    background:#333;
+    border-color:#aaa;
+}
+
+.box h3{ margin:3px 0; font-size:13px; }
+
+button{
+    padding:4px 8px;
+    font-size:11px;
+    cursor:pointer;
+}
+
+/* ===== CHART ใหญ่ขึ้น ===== */
+.middle{
+    display:flex;
+    flex:1;
+    gap:10px;
+    height:82%;
+}
+
+.chartBox{
+    flex:1;
+    background:white;
+    padding:8px;
+    border-radius:12px;
+    transition:0.3s;
+}
+
+.dark .chartBox{
+    background:#2b2b2b;
+}
+
+canvas{
+    height:100% !important;
+}
+</style>
+</head>
+
+<body class="light">
+
+<div class="wrapper">
+
+<h3 id="statusText">เลือกโหมดการฝึก</h3>
+<h3 id="timerText">เวลา: 0 วิ</h3>
+
+<div class="top">
+
+    <div class="box">
+        <h3>Dorsi</h3>
+        <div id="dorsi">0°</div>
+        <div id="dorsiCount">1 / 5</div>
+        <button onclick="startMode('dorsi')">Start</button>
+    </div>
+
+    <div class="box">
+        <h3>Plantar</h3>
+        <div id="plantar">0°</div>
+        <div id="plantarCount">1 / 5</div>
+        <button onclick="startMode('plantar')">Start</button>
+    </div>
+
+    <div class="box">
+        <h3>X</h3>
+        <div id="xVal">0</div>
+        <h3>Y</h3>
+        <div id="yVal">0</div>
+        <h3>Z</h3>
+        <div id="zVal">0</div>
+    </div>
+
+    <div class="box">
+        <button onclick="toggleMode()">🌙 / ☀️</button>
+    </div>
+
+</div>
+
+<div class="middle">
+    <div class="chartBox">
+        <canvas id="realtimeChart"></canvas>
+    </div>
+    <div class="chartBox">
+        <canvas id="romChart"></canvas>
+    </div>
+</div>
+
+</div>
+
+<script>
+
+let duration=30;
+let timer;
+let running=false;
+let mode=null;
+
+let dorsiSet=1;
+let plantarSet=1;
+
+let minVal,maxVal;
+
+let colors=["red","blue","green","orange","purple"];
+
+const realtimeChart=new Chart(document.getElementById("realtimeChart"),{
+    type:'line',
+    data:{
+        labels:[],
+        datasets:[{
+            label:'Angle',
+            data:[],
+            borderColor:'cyan',
+            fill:false,
+            tension:0.3
+        }]
+    },
+    options:{responsive:true,maintainAspectRatio:false}
+});
+
+const romChart=new Chart(document.getElementById("romChart"),{
+    type:'bar',
+    data:{
+        labels:["ROM"],
+        datasets:[]
+    },
+    options:{responsive:true,maintainAspectRatio:false}
+});
+
+function startMode(selectedMode){
+
+    if(running) return;
+
+    if(selectedMode==="dorsi" && dorsiSet>5){
+        alert("Dorsi ครบ 5 เซตแล้ว");
+        return;
+    }
+
+    if(selectedMode==="plantar" && plantarSet>5){
+        alert("Plantar ครบ 5 เซตแล้ว");
+        return;
+    }
+
+    mode=selectedMode;
+    running=true;
+    minVal=999;
+    maxVal=-999;
+
+    document.getElementById("statusText").innerText=
+        "กำลังฝึก: "+mode.toUpperCase();
+
+    document.getElementById("timerText").innerText=
+        "เวลา: "+duration+" วิ";
+
+    realtimeChart.data.labels=[];
+    realtimeChart.data.datasets[0].data=[];
+    realtimeChart.update();
+
+    let timeLeft=duration;
+
+    timer=setInterval(()=>{
+
+        // 🔥 เปลี่ยนตรงนี้เป็นค่า MPU จริงได้
+        let x=(Math.random()*20-10).toFixed(2);
+        let y=(Math.random()*20-10).toFixed(2);
+        let z=(Math.random()*20-10).toFixed(2);
+
+        document.getElementById("xVal").innerText=x;
+        document.getElementById("yVal").innerText=y;
+        document.getElementById("zVal").innerText=z;
+
+        let angle=parseFloat(y);
+
+        if(mode==="dorsi"){
+            angle=Math.max(0,angle);
+            document.getElementById("dorsi").innerText=angle.toFixed(1)+"°";
+        }else{
+            angle=Math.abs(Math.min(0,angle));
+            document.getElementById("plantar").innerText=angle.toFixed(1)+"°";
+        }
+
+        realtimeChart.data.labels.push(duration-timeLeft);
+        realtimeChart.data.datasets[0].data.push(angle);
+        realtimeChart.update();
+
+        if(angle<minVal) minVal=angle;
+        if(angle>maxVal) maxVal=angle;
+
+        timeLeft--;
+        document.getElementById("timerText").innerText=
+            "เวลา: "+timeLeft+" วิ";
+
+        if(timeLeft<=0){
+            stopMode();
+        }
+
+    },1000);
+}
+
+function stopMode(){
+
+    clearInterval(timer);
+    running=false;
+
+    let rom=(maxVal-minVal).toFixed(2);
+
+    if(mode==="dorsi"){
+        romChart.data.datasets.push({
+            label:"Dorsi Set "+dorsiSet,
+            data:[rom],
+            backgroundColor:colors[dorsiSet-1]
+        });
+        dorsiSet++;
+        document.getElementById("dorsiCount").innerText=
+            dorsiSet+" / 5";
+    }else{
+        romChart.data.datasets.push({
+            label:"Plantar Set "+plantarSet,
+            data:[rom],
+            backgroundColor:colors[plantarSet-1]
+        });
+        plantarSet++;
+        document.getElementById("plantarCount").innerText=
+            plantarSet+" / 5";
+    }
+
+    romChart.update();
+
+    document.getElementById("statusText").innerText="เสร็จสิ้น";
+    document.getElementById("timerText").innerText="เวลา: 0 วิ";
+
+    document.getElementById("xVal").innerText=0;
+    document.getElementById("yVal").innerText=0;
+    document.getElementById("zVal").innerText=0;
+    document.getElementById("dorsi").innerText="0°";
+    document.getElementById("plantar").innerText="0°";
+}
+
+function toggleMode(){
+    let body=document.body;
+    body.classList.toggle("dark");
+    body.classList.toggle("light");
+}
+
+</script>
+
+</body>
+</html>
