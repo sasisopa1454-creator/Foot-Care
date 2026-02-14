@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>Foot Care Training</title>
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -16,7 +15,7 @@ h2{text-align:center;}
     background:white;
     border-radius:12px;
     padding:20px;
-    width:180px;
+    width:200px;
     text-align:center;
     box-shadow:0 4px 10px rgba(0,0,0,0.1);
 }
@@ -24,11 +23,12 @@ h2{text-align:center;}
 
 button{
     background:#007bff;color:white;border:none;
-    padding:10px 15px;border-radius:8px;cursor:pointer;
+    padding:8px 12px;border-radius:8px;cursor:pointer;
+    margin:5px;
 }
 button:hover{background:#0056b3;}
 
-.timer{text-align:center;font-size:28px;margin:20px 0;}
+.timer{text-align:center;font-size:24px;margin:20px 0;}
 
 .xyz-box{
     display:flex;
@@ -76,15 +76,16 @@ canvas{
     <div class="card">
         <div>Dorsi</div>
         <div class="big" id="dorsiVal">0</div>
+        <button onclick="startDorsi()">Start Dorsi</button>
     </div>
 
     <div class="card">
         <div>Plantar</div>
         <div class="big" id="plantarVal">0</div>
+        <button onclick="startPlantar()">Start Plantar</button>
     </div>
 </div>
 
-<!-- X Y Z -->
 <div class="xyz-box">
     <div class="xyz">X<br><span id="xVal">0</span></div>
     <div class="xyz">Y<br><span id="yVal">0</span></div>
@@ -93,8 +94,6 @@ canvas{
 
 <div class="timer">
 ⏱️ เวลา: <span id="timer">30</span> วินาที
-<br><br>
-<button onclick="startTraining()">เริ่ม</button>
 </div>
 
 <table>
@@ -129,8 +128,8 @@ let yVal=document.getElementById("yVal");
 let zVal=document.getElementById("zVal");
 let table=document.getElementById("resultTable");
 
-let timeLeft=30;
 let interval;
+let timeLeft=30;
 let currentSet=0;
 
 let maxDorsi=0;
@@ -157,49 +156,65 @@ function resetXYZ(){
     xVal.innerText=0;
     yVal.innerText=0;
     zVal.innerText=0;
-    dorsiVal.innerText=0;
-    plantarVal.innerText=0;
 }
 
-function startTraining(){
-    if(currentSet>=5)return;
+function simulateMPU(){
+    let x=Math.random()*40-20;
+    let y=Math.random()*50-25;
+    let z=Math.random()*30-15;
 
-    resetXYZ();
+    xVal.innerText=x.toFixed(1);
+    yVal.innerText=y.toFixed(1);
+    zVal.innerText=z.toFixed(1);
+
+    return {x,y,z};
+}
+
+function startDorsi(){
+    runTraining("dorsi");
+}
+
+function startPlantar(){
+    runTraining("plantar");
+}
+
+function runTraining(type){
+    if(currentSet>=5) return;
+
+    clearInterval(interval);
     timeLeft=30;
     timerEl.innerText=timeLeft;
-    maxDorsi=0;
-    maxPlantar=0;
 
-    liveChart.data.labels=[];
-    liveChart.data.datasets[0].data=[];
-    liveChart.data.datasets[1].data=[];
-    liveChart.update();
+    if(type==="dorsi") maxDorsi=0;
+    if(type==="plantar") maxPlantar=0;
 
     interval=setInterval(()=>{
         timeLeft--;
         timerEl.innerText=timeLeft;
 
-        // 🔥 ตรงนี้เอาค่า Firebase จริงมาแทนได้
-        let x=Math.random()*40-20;
-        let y=Math.random()*50-25;
-        let z=Math.random()*30-15;
+        let {x,y,z}=simulateMPU();
 
-        let dorsi=x;
-        let plantar=y;
+        let value=(type==="dorsi")?x:y;
 
-        xVal.innerText=x.toFixed(1);
-        yVal.innerText=y.toFixed(1);
-        zVal.innerText=z.toFixed(1);
+        if(type==="dorsi"){
+            dorsiVal.innerText=value.toFixed(1);
+            if(Math.abs(value)>maxDorsi) maxDorsi=Math.abs(value);
+        }
 
-        dorsiVal.innerText=dorsi.toFixed(1);
-        plantarVal.innerText=plantar.toFixed(1);
+        if(type==="plantar"){
+            plantarVal.innerText=value.toFixed(1);
+            if(Math.abs(value)>maxPlantar) maxPlantar=Math.abs(value);
+        }
 
-        if(Math.abs(dorsi)>maxDorsi)maxDorsi=Math.abs(dorsi);
-        if(Math.abs(plantar)>maxPlantar)maxPlantar=Math.abs(plantar);
+        liveChart.data.labels.push(liveChart.data.labels.length);
+        if(type==="dorsi"){
+            liveChart.data.datasets[0].data.push(value);
+            liveChart.data.datasets[1].data.push(null);
+        }else{
+            liveChart.data.datasets[0].data.push(null);
+            liveChart.data.datasets[1].data.push(value);
+        }
 
-        liveChart.data.labels.push(30-timeLeft);
-        liveChart.data.datasets[0].data.push(dorsi);
-        liveChart.data.datasets[1].data.push(plantar);
         liveChart.update();
 
         if(timeLeft<=0){
