@@ -117,7 +117,6 @@ let running = false;
 let mode = null;
 let dorsiSet = 1;
 let plantarSet = 1;
-
 let prevAngle = 0;
 
 // ===== Graph 1 (Angle) =====
@@ -148,22 +147,39 @@ const angleChart = new Chart(document.getElementById("angleChart"), {
 
 // ===== Graph 2 (Rate of Motion) =====
 const rateChart = new Chart(document.getElementById("rateChart"), {
-    type:'line',
+    type:'bar',
     data:{
         labels:[],
         datasets:[
             {
                 label:'Rate of Motion (deg/sec)',
                 data:[],
-                borderColor:'green',
-                tension:0.3
+                backgroundColor:'rgba(0,200,0,0.6)'
             }
         ]
     },
     options:{
         responsive:true,
-        maintainAspectRatio:false
-    }
+        maintainAspectRatio:false,
+        plugins:{
+            legend:{ display:true }
+        }
+    },
+    plugins:[{
+        id:'valueOnBar',
+        afterDatasetsDraw(chart){
+            const {ctx} = chart;
+            chart.data.datasets.forEach((dataset,i)=>{
+                chart.getDatasetMeta(i).data.forEach((bar,index)=>{
+                    let value = dataset.data[index];
+                    ctx.fillStyle = "black";
+                    ctx.font = "12px Arial";
+                    ctx.textAlign = "center";
+                    ctx.fillText(value.toFixed(2), bar.x, bar.y - 5);
+                });
+            });
+        }
+    }]
 });
 
 function startMode(selectedMode){
@@ -183,12 +199,9 @@ if(selectedMode==="plantar" && plantarSet>5){
 mode = selectedMode;
 running = true;
 
-angleChart.data.labels=[];
-angleChart.data.datasets[0].data=[];
-angleChart.data.datasets[1].data=[];
+// รีเซตเฉพาะกราฟ Rate
 rateChart.data.labels=[];
 rateChart.data.datasets[0].data=[];
-angleChart.update();
 rateChart.update();
 
 let timeLeft = duration;
@@ -198,7 +211,7 @@ document.getElementById("statusText").innerText="กำลังฝึก: "+mod
 
 timer=setInterval(()=>{
 
-// ======= จำลองค่า MPU (เปลี่ยนเป็นของจริงได้) =======
+// ===== จำลองค่า MPU =====
 let y = (Math.random()*30 - 15).toFixed(2);
 let angle = parseFloat(y);
 
@@ -212,13 +225,18 @@ if(mode==="dorsi"){
     plantarVal = Math.abs(Math.min(0, angle));
 }
 
+// ===== แสดงค่า Real-time =====
+document.getElementById("dorsi").innerText = dorsiVal.toFixed(2) + "°";
+document.getElementById("plantar").innerText = plantarVal.toFixed(2) + "°";
+
 // ===== Rate of Motion =====
 let rate = Math.abs(angle - prevAngle);
 prevAngle = angle;
 
-// ===== Push Data =====
-let t = duration - timeLeft;
+// ===== เวลาแบบต่อเนื่อง =====
+let t = angleChart.data.labels.length;
 
+// ===== Push Data =====
 angleChart.data.labels.push(t);
 angleChart.data.datasets[0].data.push(plantarVal);
 angleChart.data.datasets[1].data.push(dorsiVal);
