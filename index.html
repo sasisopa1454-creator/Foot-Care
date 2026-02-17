@@ -278,3 +278,290 @@ document.body.classList.toggle("light");
 
 </body>
 </html>
+Pichayatida
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Ankle Rehab Monitor</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:'Segoe UI',sans-serif;
+  background:#eef3f9;
+}
+
+.header{
+  background:#1f3c88;
+  color:white;
+  padding:15px;
+  text-align:center;
+  font-size:22px;
+  font-weight:bold;
+  letter-spacing:1px;
+}
+
+.container{
+  padding:15px;
+}
+
+.cardRow{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:15px;
+}
+
+.card{
+  background:white;
+  width:30%;
+  border-radius:12px;
+  padding:15px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+  text-align:center;
+}
+
+.card h3{
+  margin:5px 0;
+  color:#1f3c88;
+}
+
+.value{
+  font-size:28px;
+  font-weight:bold;
+  margin:10px 0;
+}
+
+button{
+  padding:8px 14px;
+  background:#1f3c88;
+  color:white;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+button:hover{
+  background:#163172;
+}
+
+.chartContainer{
+  display:flex;
+  gap:15px;
+}
+
+.chartBox{
+  background:white;
+  flex:1;
+  padding:15px;
+  border-radius:12px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+
+canvas{
+  height:350px !important;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">ANKLE REHABILITATION MONITOR</div>
+
+<div class="container">
+
+<div class="cardRow">
+
+<div class="card">
+<h3>DORSI</h3>
+<div class="value" id="dorsi">0°</div>
+<div>Set <span id="dorsiSet">1</span> / 5</div>
+<button onclick="startMode('dorsi')">Start</button>
+</div>
+
+<div class="card">
+<h3>PLANTAR</h3>
+<div class="value" id="plantar">0°</div>
+<div>Set <span id="plantarSet">1</span> / 5</div>
+<button onclick="startMode('plantar')">Start</button>
+</div>
+
+<div class="card">
+<h3>STATUS</h3>
+<div id="statusText">Ready</div>
+<div id="timerText">Time: 0 s</div>
+</div>
+
+</div>
+
+<div class="chartContainer">
+<div class="chartBox">
+<canvas id="angleChart"></canvas>
+</div>
+<div class="chartBox">
+<canvas id="rateChart"></canvas>
+</div>
+</div>
+
+</div>
+
+<script>
+
+let duration=30;
+let timer;
+let running=false;
+let mode=null;
+let dorsiSet=1;
+let plantarSet=1;
+let prevAngle=0;
+
+let maxDorsi=0;
+let maxPlantar=0;
+let setIndex=0;
+
+// ===== Line Chart (Angle vs Time) =====
+const angleChart=new Chart(document.getElementById("angleChart"),{
+type:'line',
+data:{
+labels:[],
+datasets:[
+{
+label:'Plantar (°)',
+data:[],
+borderColor:'#007bff',
+tension:0.3
+},
+{
+label:'Dorsi (°)',
+data:[],
+borderColor:'#dc3545',
+tension:0.3
+}
+]
+},
+options:{
+responsive:true,
+maintainAspectRatio:false,
+scales:{
+x:{title:{display:true,text:'Time (s)'}},
+y:{title:{display:true,text:'Angle (°)'},min:0,max:40}
+}
+}
+});
+
+// ===== Bar Chart (5 Sets Only) =====
+const colors=[
+'#007bff','#28a745','#ffc107','#dc3545','#6f42c1'
+];
+
+const rateChart=new Chart(document.getElementById("rateChart"),{
+type:'bar',
+data:{
+labels:['Set1','Set2','Set3','Set4','Set5'],
+datasets:[{
+label:'Total ROM (Plantar max + Dorsi max)',
+data:[0,0,0,0,0],
+backgroundColor:colors
+}]
+},
+options:{
+responsive:true,
+maintainAspectRatio:false,
+scales:{
+y:{beginAtZero:true,title:{display:true,text:'Total ROM (°)'}}
+}
+},
+plugins:[{
+id:'valueOnBar',
+afterDatasetsDraw(chart){
+const {ctx}=chart;
+chart.getDatasetMeta(0).data.forEach((bar,index)=>{
+let value=chart.data.datasets[0].data[index];
+if(value>0){
+ctx.fillStyle="#000";
+ctx.textAlign="center";
+ctx.font="12px Arial";
+ctx.fillText(value.toFixed(1),bar.x,bar.y-5);
+}
+});
+}
+}]
+});
+
+function startMode(selectedMode){
+
+if(running) return;
+
+mode=selectedMode;
+running=true;
+
+maxDorsi=0;
+maxPlantar=0;
+prevAngle=0;
+
+// reset line graph for new set
+angleChart.data.labels=[];
+angleChart.data.datasets[0].data=[];
+angleChart.data.datasets[1].data=[];
+angleChart.update();
+
+let timeLeft=duration;
+document.getElementById("statusText").innerText="Training: "+mode.toUpperCase();
+
+timer=setInterval(()=>{
+
+let angle=(Math.random()*30-15);
+let dorsiVal=0;
+let plantarVal=0;
+
+if(mode==="dorsi"){
+dorsiVal=Math.max(0,angle);
+maxDorsi=Math.max(maxDorsi,dorsiVal);
+}else{
+plantarVal=Math.abs(Math.min(0,angle));
+maxPlantar=Math.max(maxPlantar,plantarVal);
+}
+
+document.getElementById("dorsi").innerText=dorsiVal.toFixed(1)+"°";
+document.getElementById("plantar").innerText=plantarVal.toFixed(1)+"°";
+
+let t=duration-timeLeft;
+
+angleChart.data.labels.push(t);
+angleChart.data.datasets[0].data.push(plantarVal);
+angleChart.data.datasets[1].data.push(dorsiVal);
+angleChart.update();
+
+timeLeft--;
+document.getElementById("timerText").innerText="Time: "+timeLeft+" s";
+
+if(timeLeft<=0){
+
+clearInterval(timer);
+running=false;
+
+let totalROM=maxDorsi+maxPlantar;
+rateChart.data.datasets[0].data[setIndex]=totalROM;
+rateChart.update();
+
+setIndex++;
+
+if(mode==="dorsi"){
+dorsiSet++;
+document.getElementById("dorsiSet").innerText=dorsiSet;
+}else{
+plantarSet++;
+document.getElementById("plantarSet").innerText=plantarSet;
+}
+
+document.getElementById("statusText").innerText="Completed";
+}
+
+},1000);
+}
+
+</script>
+</body>
+</html>
+
