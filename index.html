@@ -131,15 +131,17 @@ let duration=30;
 let timer;
 let running=false;
 let mode=null;
+
 let dorsiSet=1;
 let plantarSet=1;
-let prevAngle=0;
-
-let maxDorsi=0;
-let maxPlantar=0;
 let setIndex=0;
 
-// ===== Line Chart (Angle vs Time) =====
+let tempDorsiMax=0;
+let tempPlantarMax=0;
+let dorsiDone=false;
+let plantarDone=false;
+
+// ===== Line Chart =====
 const angleChart=new Chart(document.getElementById("angleChart"),{
 type:'line',
 data:{
@@ -169,7 +171,7 @@ y:{title:{display:true,text:'Angle (°)'},min:0,max:40}
 }
 });
 
-// ===== Bar Chart (5 Sets Only) =====
+// ===== Bar Chart =====
 const colors=[
 '#007bff','#28a745','#ffc107','#dc3545','#6f42c1'
 ];
@@ -190,22 +192,7 @@ maintainAspectRatio:false,
 scales:{
 y:{beginAtZero:true,title:{display:true,text:'Total ROM (°)'}}
 }
-},
-plugins:[{
-id:'valueOnBar',
-afterDatasetsDraw(chart){
-const {ctx}=chart;
-chart.getDatasetMeta(0).data.forEach((bar,index)=>{
-let value=chart.data.datasets[0].data[index];
-if(value>0){
-ctx.fillStyle="#000";
-ctx.textAlign="center";
-ctx.font="12px Arial";
-ctx.fillText(value.toFixed(1),bar.x,bar.y-5);
 }
-});
-}
-}]
 });
 
 function startMode(selectedMode){
@@ -215,17 +202,9 @@ if(running) return;
 mode=selectedMode;
 running=true;
 
-maxDorsi=0;
-maxPlantar=0;
-prevAngle=0;
-
-// reset line graph for new set
-angleChart.data.labels=[];
-angleChart.data.datasets[0].data=[];
-angleChart.data.datasets[1].data=[];
-angleChart.update();
-
 let timeLeft=duration;
+let localTime=0;
+
 document.getElementById("statusText").innerText="Training: "+mode.toUpperCase();
 
 timer=setInterval(()=>{
@@ -236,22 +215,22 @@ let plantarVal=0;
 
 if(mode==="dorsi"){
 dorsiVal=Math.max(0,angle);
-maxDorsi=Math.max(maxDorsi,dorsiVal);
+tempDorsiMax=Math.max(tempDorsiMax,dorsiVal);
 }else{
 plantarVal=Math.abs(Math.min(0,angle));
-maxPlantar=Math.max(maxPlantar,plantarVal);
+tempPlantarMax=Math.max(tempPlantarMax,plantarVal);
 }
 
 document.getElementById("dorsi").innerText=dorsiVal.toFixed(1)+"°";
 document.getElementById("plantar").innerText=plantarVal.toFixed(1)+"°";
 
-let t=duration-timeLeft;
-
-angleChart.data.labels.push(t);
+// ไม่ล้างกราฟ → ซ้อนต่อเลย
+angleChart.data.labels.push(localTime);
 angleChart.data.datasets[0].data.push(plantarVal);
 angleChart.data.datasets[1].data.push(dorsiVal);
 angleChart.update();
 
+localTime++;
 timeLeft--;
 document.getElementById("timerText").innerText="Time: "+timeLeft+" s";
 
@@ -260,18 +239,30 @@ if(timeLeft<=0){
 clearInterval(timer);
 running=false;
 
-let totalROM=maxDorsi+maxPlantar;
+if(mode==="dorsi"){
+dorsiDone=true;
+dorsiSet++;
+document.getElementById("dorsiSet").innerText=dorsiSet;
+}else{
+plantarDone=true;
+plantarSet++;
+document.getElementById("plantarSet").innerText=plantarSet;
+}
+
+// สร้างแท่งเมื่อทำครบทั้งสอง
+if(dorsiDone && plantarDone){
+
+let totalROM=tempDorsiMax + tempPlantarMax;
+
 rateChart.data.datasets[0].data[setIndex]=totalROM;
 rateChart.update();
 
 setIndex++;
 
-if(mode==="dorsi"){
-dorsiSet++;
-document.getElementById("dorsiSet").innerText=dorsiSet;
-}else{
-plantarSet++;
-document.getElementById("plantarSet").innerText=plantarSet;
+tempDorsiMax=0;
+tempPlantarMax=0;
+dorsiDone=false;
+plantarDone=false;
 }
 
 document.getElementById("statusText").innerText="Completed";
@@ -281,6 +272,7 @@ document.getElementById("statusText").innerText="Completed";
 }
 
 </script>
+
 </body>
 </html>
 
