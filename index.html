@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -40,7 +39,6 @@ body.dark{
 }
 
 body.dark .header{ background:#000; }
-
 body.dark .card,
 body.dark .chartBox{
   background:#1e1e1e;
@@ -162,16 +160,17 @@ let plantarDone=false;
 const angleChart=new Chart(document.getElementById("angleChart"),{
 type:'line',
 data:{
+labels:[...Array(30)].map((_,i)=>i+1), // 1-30
 datasets:[
 {
 label:'Plantar (°)',
-data:[],
+data:new Array(30).fill(null),
 borderColor:'#007bff',
 tension:0.3
 },
 {
 label:'Dorsi (°)',
-data:[],
+data:new Array(30).fill(null),
 borderColor:'#dc3545',
 tension:0.3
 }
@@ -183,10 +182,9 @@ maintainAspectRatio:false,
 animation:false,
 scales:{
 x:{
-type:'linear',
-min:0,
-max:30,
-title:{display:true,text:'Time (s)'}
+title:{display:true,text:'Time (s)'},
+min:1,
+max:30
 },
 y:{
 min:0,
@@ -231,8 +229,8 @@ ctx.fillText(value.toFixed(1),bar.x,bar.y-5);
 });
 
 function resetLineChart(){
-angleChart.data.datasets[0].data=[];
-angleChart.data.datasets[1].data=[];
+angleChart.data.datasets[0].data=new Array(30).fill(null);
+angleChart.data.datasets[1].data=new Array(30).fill(null);
 angleChart.update();
 }
 
@@ -243,8 +241,8 @@ if(running) return;
 mode=selectedMode;
 running=true;
 
+let second=0;
 let timeLeft=duration;
-let localTime=0;
 
 document.getElementById("statusText").innerText="Training: "+mode.toUpperCase();
 
@@ -257,19 +255,19 @@ let plantarVal=0;
 if(mode==="dorsi"){
 dorsiVal=Math.max(0,angle);
 tempDorsiMax=Math.max(tempDorsiMax,dorsiVal);
+angleChart.data.datasets[1].data[second]=dorsiVal;
 }else{
 plantarVal=Math.abs(Math.min(0,angle));
 tempPlantarMax=Math.max(tempPlantarMax,plantarVal);
+angleChart.data.datasets[0].data[second]=plantarVal;
 }
 
 document.getElementById("dorsi").innerText=dorsiVal.toFixed(1)+"°";
 document.getElementById("plantar").innerText=plantarVal.toFixed(1)+"°";
 
-angleChart.data.datasets[0].data.push({x:localTime,y:plantarVal});
-angleChart.data.datasets[1].data.push({x:localTime,y:dorsiVal});
 angleChart.update();
 
-localTime++;
+second++;
 timeLeft--;
 document.getElementById("timerText").innerText="Time: "+timeLeft+" s";
 
@@ -278,7 +276,7 @@ if(timeLeft<=0){
 clearInterval(timer);
 running=false;
 
-// ❗ ไม่รีเซ็ตค่า → กราฟค้างไว้
+// ❗ กราฟค้างอยู่ค่าล่าสุด ไม่เติม 0
 
 if(mode==="dorsi"){
 dorsiDone=true;
@@ -290,7 +288,6 @@ plantarSet++;
 document.getElementById("plantarSet").innerText=plantarSet;
 }
 
-// ✅ เมื่อครบทั้งคู่ → คำนวณ + รีเซ็ตกราฟ
 if(dorsiDone && plantarDone){
 
 let totalROM=tempDorsiMax + tempPlantarMax;
@@ -304,7 +301,7 @@ tempPlantarMax=0;
 dorsiDone=false;
 plantarDone=false;
 
-// 🔄 ล้างกราฟเพื่อเริ่มรอบใหม่
+// ล้างกราฟเพื่อเริ่มคู่ใหม่
 resetLineChart();
 }
 
