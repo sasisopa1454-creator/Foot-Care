@@ -10,6 +10,12 @@ body{
   margin:0;
   font-family:'Segoe UI',sans-serif;
   background:#eef3f9;
+  transition:0.3s;
+}
+
+body.dark{
+  background:#121212;
+  color:#eee;
 }
 
 .header{
@@ -20,11 +26,30 @@ body{
   font-size:22px;
   font-weight:bold;
   letter-spacing:1px;
+  position:relative;
 }
 
-.container{
-  padding:15px;
+.toggleBtn{
+  position:absolute;
+  right:15px;
+  top:12px;
+  padding:6px 12px;
+  font-size:12px;
+  background:#fff;
+  color:#1f3c88;
 }
+
+body.dark .header{
+  background:#000;
+}
+
+body.dark .card,
+body.dark .chartBox{
+  background:#1e1e1e;
+  color:white;
+}
+
+.container{ padding:15px; }
 
 .cardRow{
   display:flex;
@@ -39,6 +64,7 @@ body{
   padding:15px;
   box-shadow:0 4px 10px rgba(0,0,0,0.1);
   text-align:center;
+  transition:0.3s;
 }
 
 .card h3{
@@ -61,9 +87,7 @@ button{
   cursor:pointer;
 }
 
-button:hover{
-  background:#163172;
-}
+button:hover{ background:#163172; }
 
 .chartContainer{
   display:flex;
@@ -76,17 +100,19 @@ button:hover{
   padding:15px;
   border-radius:12px;
   box-shadow:0 4px 10px rgba(0,0,0,0.1);
+  transition:0.3s;
 }
 
-canvas{
-  height:350px !important;
-}
+canvas{ height:350px !important; }
 </style>
 </head>
 
 <body>
 
-<div class="header">ANKLE REHABILITATION MONITOR</div>
+<div class="header">
+ANKLE REHABILITATION MONITOR
+<button class="toggleBtn" onclick="toggleDark()">🌙 Dark</button>
+</div>
 
 <div class="container">
 
@@ -145,7 +171,6 @@ let plantarDone=false;
 const angleChart=new Chart(document.getElementById("angleChart"),{
 type:'line',
 data:{
-labels:[],
 datasets:[
 {
 label:'Plantar (°)',
@@ -165,34 +190,54 @@ options:{
 responsive:true,
 maintainAspectRatio:false,
 scales:{
-x:{title:{display:true,text:'Time (s)'}},
-y:{title:{display:true,text:'Angle (°)'},min:0,max:40}
+x:{
+type:'linear',
+min:0,
+max:30,
+title:{display:true,text:'Time (s)'}
+},
+y:{
+min:0,
+max:40,
+title:{display:true,text:'Angle (°)'}
+}
 }
 }
 });
 
-// ===== Bar Chart =====
-const colors=[
-'#007bff','#28a745','#ffc107','#dc3545','#6f42c1'
-];
-
+// ===== Bar Chart with Value Label =====
 const rateChart=new Chart(document.getElementById("rateChart"),{
 type:'bar',
 data:{
 labels:['Set1','Set2','Set3','Set4','Set5'],
 datasets:[{
-label:'Total ROM (Plantar max + Dorsi max)',
+label:'Total ROM (°)',
 data:[0,0,0,0,0],
-backgroundColor:colors
+backgroundColor:['#007bff','#28a745','#ffc107','#dc3545','#6f42c1']
 }]
 },
 options:{
 responsive:true,
 maintainAspectRatio:false,
 scales:{
-y:{beginAtZero:true,title:{display:true,text:'Total ROM (°)'}}
+y:{beginAtZero:true}
 }
+},
+plugins:[{
+id:'valueLabel',
+afterDatasetsDraw(chart){
+const {ctx}=chart;
+chart.getDatasetMeta(0).data.forEach((bar,index)=>{
+let value=chart.data.datasets[0].data[index];
+if(value>0){
+ctx.fillStyle="black";
+ctx.textAlign="center";
+ctx.font="12px Arial";
+ctx.fillText(value.toFixed(1),bar.x,bar.y-5);
 }
+});
+}
+}]
 });
 
 function startMode(selectedMode){
@@ -224,10 +269,9 @@ tempPlantarMax=Math.max(tempPlantarMax,plantarVal);
 document.getElementById("dorsi").innerText=dorsiVal.toFixed(1)+"°";
 document.getElementById("plantar").innerText=plantarVal.toFixed(1)+"°";
 
-// ไม่ล้างกราฟ → ซ้อนต่อเลย
-angleChart.data.labels.push(localTime);
-angleChart.data.datasets[0].data.push(plantarVal);
-angleChart.data.datasets[1].data.push(dorsiVal);
+// จำกัดแกน X ไม่เกิน 30
+angleChart.data.datasets[0].data.push({x:localTime,y:plantarVal});
+angleChart.data.datasets[1].data.push({x:localTime,y:dorsiVal});
 angleChart.update();
 
 localTime++;
@@ -249,11 +293,9 @@ plantarSet++;
 document.getElementById("plantarSet").innerText=plantarSet;
 }
 
-// สร้างแท่งเมื่อทำครบทั้งสอง
 if(dorsiDone && plantarDone){
 
 let totalROM=tempDorsiMax + tempPlantarMax;
-
 rateChart.data.datasets[0].data[setIndex]=totalROM;
 rateChart.update();
 
@@ -271,9 +313,14 @@ document.getElementById("statusText").innerText="Completed";
 },1000);
 }
 
+function toggleDark(){
+document.body.classList.toggle("dark");
+}
+
 </script>
 
 </body>
 </html>
+
 
 
