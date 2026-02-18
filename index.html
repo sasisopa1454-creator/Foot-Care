@@ -2,6 +2,326 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<title>Ankle Rehab Monitor</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:'Segoe UI',sans-serif;
+  background:#eef3f9;
+  transition:0.3s;
+}
+
+body.dark{
+  background:#121212;
+  color:#eee;
+}
+
+.header{
+  background:#1f3c88;
+  color:white;
+  padding:15px;
+  text-align:center;
+  font-size:22px;
+  font-weight:bold;
+  position:relative;
+}
+
+.toggleBtn{
+  position:absolute;
+  right:15px;
+  top:12px;
+  padding:6px 12px;
+  font-size:12px;
+  background:#fff;
+  color:#1f3c88;
+}
+
+body.dark .header{ background:#000; }
+body.dark .card,
+body.dark .chartBox{
+  background:#1e1e1e;
+  color:white;
+}
+
+.container{ padding:15px; }
+
+.cardRow{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:15px;
+}
+
+.card{
+  background:white;
+  width:30%;
+  border-radius:12px;
+  padding:15px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+  text-align:center;
+}
+
+.value{
+  font-size:28px;
+  font-weight:bold;
+  margin:10px 0;
+}
+
+button{
+  padding:8px 14px;
+  background:#1f3c88;
+  color:white;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+button:hover{ background:#163172; }
+
+.chartContainer{
+  display:flex;
+  gap:15px;
+}
+
+.chartBox{
+  background:white;
+  flex:1;
+  padding:15px;
+  border-radius:12px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+
+canvas{ height:350px !important; }
+</style>
+</head>
+
+<body>
+
+<div class="header">
+ANKLE REHABILITATION MONITOR
+<button class="toggleBtn" onclick="toggleDark()">🌙 Dark</button>
+</div>
+
+<div class="container">
+
+<div class="cardRow">
+
+<div class="card">
+<h3>DORSI</h3>
+<div class="value" id="dorsi">0°</div>
+<div>Set <span id="dorsiSet">1</span> / 5</div>
+<button onclick="startMode('dorsi')">Start</button>
+</div>
+
+<div class="card">
+<h3>PLANTAR</h3>
+<div class="value" id="plantar">0°</div>
+<div>Set <span id="plantarSet">1</span> / 5</div>
+<button onclick="startMode('plantar')">Start</button>
+</div>
+
+<div class="card">
+<h3>STATUS</h3>
+<div id="statusText">Ready</div>
+<div id="timerText">Time: 0 s</div>
+</div>
+
+</div>
+
+<div class="chartContainer">
+<div class="chartBox">
+<canvas id="angleChart"></canvas>
+</div>
+<div class="chartBox">
+<canvas id="rateChart"></canvas>
+</div>
+</div>
+
+</div>
+
+<script>
+
+let duration=30;
+let timer;
+let running=false;
+let mode=null;
+
+let dorsiSet=1;
+let plantarSet=1;
+let setIndex=0;
+
+let tempDorsiMax=0;
+let tempPlantarMax=0;
+let dorsiDone=false;
+let plantarDone=false;
+
+// ===== Line Chart =====
+const angleChart=new Chart(document.getElementById("angleChart"),{
+type:'line',
+data:{
+labels:[...Array(30)].map((_,i)=>i+1), // 1-30
+datasets:[
+{
+label:'Plantar (°)',
+data:new Array(30).fill(null),
+borderColor:'#007bff',
+tension:0.3
+},
+{
+label:'Dorsi (°)',
+data:new Array(30).fill(null),
+borderColor:'#dc3545',
+tension:0.3
+}
+]
+},
+options:{
+responsive:true,
+maintainAspectRatio:false,
+animation:false,
+scales:{
+x:{
+title:{display:true,text:'Time (s)'},
+min:1,
+max:30
+},
+y:{
+min:0,
+max:40,
+title:{display:true,text:'Angle (°)'}
+}
+}
+}
+});
+
+// ===== Bar Chart =====
+const rateChart=new Chart(document.getElementById("rateChart"),{
+type:'bar',
+data:{
+labels:['Set1','Set2','Set3','Set4','Set5'],
+datasets:[{
+label:'Total ROM (°)',
+data:[0,0,0,0,0],
+backgroundColor:['#007bff','#28a745','#ffc107','#dc3545','#6f42c1']
+}]
+},
+options:{
+responsive:true,
+maintainAspectRatio:false,
+scales:{ y:{beginAtZero:true} }
+},
+plugins:[{
+id:'valueLabel',
+afterDatasetsDraw(chart){
+const {ctx}=chart;
+chart.getDatasetMeta(0).data.forEach((bar,index)=>{
+let value=chart.data.datasets[0].data[index];
+if(value>0){
+ctx.fillStyle="black";
+ctx.textAlign="center";
+ctx.font="12px Arial";
+ctx.fillText(value.toFixed(1),bar.x,bar.y-5);
+}
+});
+}
+}]
+});
+
+function resetLineChart(){
+angleChart.data.datasets[0].data=new Array(30).fill(null);
+angleChart.data.datasets[1].data=new Array(30).fill(null);
+angleChart.update();
+}
+
+function startMode(selectedMode){
+
+if(running) return;
+
+mode=selectedMode;
+running=true;
+
+let second=0;
+let timeLeft=duration;
+
+document.getElementById("statusText").innerText="Training: "+mode.toUpperCase();
+
+timer=setInterval(()=>{
+
+let angle=(Math.random()*30-15);
+let dorsiVal=0;
+let plantarVal=0;
+
+if(mode==="dorsi"){
+dorsiVal=Math.max(0,angle);
+tempDorsiMax=Math.max(tempDorsiMax,dorsiVal);
+angleChart.data.datasets[1].data[second]=dorsiVal;
+}else{
+plantarVal=Math.abs(Math.min(0,angle));
+tempPlantarMax=Math.max(tempPlantarMax,plantarVal);
+angleChart.data.datasets[0].data[second]=plantarVal;
+}
+
+document.getElementById("dorsi").innerText=dorsiVal.toFixed(1)+"°";
+document.getElementById("plantar").innerText=plantarVal.toFixed(1)+"°";
+
+angleChart.update();
+
+second++;
+timeLeft--;
+document.getElementById("timerText").innerText="Time: "+timeLeft+" s";
+
+if(timeLeft<=0){
+
+clearInterval(timer);
+running=false;
+
+// ❗ กราฟค้างอยู่ค่าล่าสุด ไม่เติม 0
+
+if(mode==="dorsi"){
+dorsiDone=true;
+dorsiSet++;
+document.getElementById("dorsiSet").innerText=dorsiSet;
+}else{
+plantarDone=true;
+plantarSet++;
+document.getElementById("plantarSet").innerText=plantarSet;
+}
+
+if(dorsiDone && plantarDone){
+
+let totalROM=tempDorsiMax + tempPlantarMax;
+rateChart.data.datasets[0].data[setIndex]=totalROM;
+rateChart.update();
+
+setIndex++;
+
+tempDorsiMax=0;
+tempPlantarMax=0;
+dorsiDone=false;
+plantarDone=false;
+
+// ล้างกราฟเพื่อเริ่มคู่ใหม่
+resetLineChart();
+}
+
+document.getElementById("statusText").innerText="Completed";
+}
+
+},1000);
+}
+
+function toggleDark(){
+document.body.classList.toggle("dark");
+}
+
+</script>
+
+</body>
+</html><!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
 <title>Ankle Rehab Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -320,3 +640,4 @@ function toggleMode(){
 </script>
 </body>
 </html>
+
