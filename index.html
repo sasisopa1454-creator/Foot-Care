@@ -2,128 +2,140 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Ankle Rehab Dashboard</title>
+<title>Ankle Rehab Monitor</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 body{
-    margin:0;
-    font-family:Arial;
-    overflow:hidden;
-    transition:0.3s;
+  margin:0;
+  font-family:'Segoe UI',sans-serif;
+  background:#eef3f9;
+  transition:0.3s;
 }
 
-.light{ background:#f2f2f2; color:#000; }
-.dark{ background:#1e1e1e; color:#fff; }
-
-.wrapper{
-    height:100vh;
-    display:flex;
-    flex-direction:column;
-    padding:8px;
-    box-sizing:border-box;
+body.dark{
+  background:#121212;
+  color:#eee;
 }
 
-.top{
-    display:flex;
-    justify-content:space-around;
-    align-items:center;
-    height:22%;
+.header{
+  background:#1f3c88;
+  color:white;
+  padding:15px;
+  text-align:center;
+  font-size:22px;
+  font-weight:bold;
+  position:relative;
 }
 
-.box{
-    border:2px solid #333;
-    border-radius:10px;
-    padding:8px;
-    width:180px;
-    text-align:center;
-    background:white;
+.toggleBtn{
+  position:absolute;
+  right:15px;
+  top:12px;
+  padding:6px 12px;
+  font-size:12px;
+  background:#fff;
+  color:#1f3c88;
 }
 
-.dark .box{
-    background:#2b2b2b;
-    border-color:#aaa;
+body.dark .header{ background:#000; }
+body.dark .card,
+body.dark .chartBox{
+  background:#1e1e1e;
+  color:white;
 }
 
-.bigNumber{ font-size:28px; font-weight:bold; }
-.setText{ font-size:16px; }
+.container{ padding:15px; }
 
-.valueRow{
-    display:flex;
-    justify-content:space-between;
-    font-size:15px;
+.cardRow{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:15px;
+}
+
+.card{
+  background:white;
+  width:30%;
+  border-radius:12px;
+  padding:15px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+  text-align:center;
+}
+
+.value{
+  font-size:28px;
+  font-weight:bold;
+  margin:10px 0;
 }
 
 button{
-    margin-top:5px;
-    padding:6px 12px;
-    font-size:14px;
-    cursor:pointer;
+  padding:8px 14px;
+  background:#1f3c88;
+  color:white;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
 }
 
-.middle{
-    display:flex;
-    flex:1;
-    gap:10px;
+button:hover{ background:#163172; }
+
+.chartContainer{
+  display:flex;
+  gap:15px;
 }
 
 .chartBox{
-    flex:1;
-    background:white;
-    padding:10px;
-    border-radius:14px;
+  background:white;
+  flex:1;
+  padding:15px;
+  border-radius:12px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
 }
 
-.dark .chartBox{ background:#2b2b2b; }
-
-canvas{ height:100% !important; }
+canvas{ height:350px !important; }
 </style>
 </head>
 
-<body class="light">
-<div class="wrapper">
+<body>
 
-<h2 id="statusText">เลือกโหมดการฝึก</h2>
-<h2 id="timerText">เวลา: 0 วิ</h2>
-
-<div class="top">
-
-<div class="box">
-    <b>Dorsi</b>
-    <div id="dorsi" class="bigNumber">0°</div>
-    <div id="dorsiCount" class="setText">Set 1 / 5</div>
-    <button onclick="startMode('dorsi')">Start</button>
+<div class="header">
+ANKLE REHABILITATION MONITOR
+<button class="toggleBtn" onclick="toggleDark()">🌙 Dark</button>
 </div>
 
-<div class="box">
-    <b>Plantar</b>
-    <div id="plantar" class="bigNumber">0°</div>
-    <div id="plantarCount" class="setText">Set 1 / 5</div>
-    <button onclick="startMode('plantar')">Start</button>
+<div class="container">
+
+<div class="cardRow">
+
+<div class="card">
+<h3>DORSI</h3>
+<div class="value" id="dorsi">0°</div>
+<div>Set <span id="dorsiSet">1</span> / 5</div>
+<button onclick="startMode('dorsi')">Start</button>
 </div>
 
-<div class="box">
-    <b>MPU</b>
-    <div class="valueRow">
-        <div>X: <span id="xVal">0</span></div>
-        <div>Y: <span id="yVal">0</span></div>
-        <div>Z: <span id="zVal">0</span></div>
-    </div>
+<div class="card">
+<h3>PLANTAR</h3>
+<div class="value" id="plantar">0°</div>
+<div>Set <span id="plantarSet">1</span> / 5</div>
+<button onclick="startMode('plantar')">Start</button>
 </div>
 
-<div class="box">
-    <button onclick="toggleMode()">🌙 / ☀️</button>
+<div class="card">
+<h3>STATUS</h3>
+<div id="statusText">Ready</div>
+<div id="timerText">Time: 0 s</div>
 </div>
 
 </div>
 
-<div class="middle">
-    <div class="chartBox">
-        <canvas id="mainChart"></canvas>
-    </div>
-    <div class="chartBox">
-        <canvas id="romChart"></canvas>
-    </div>
+<div class="chartContainer">
+<div class="chartBox">
+<canvas id="angleChart"></canvas>
+</div>
+<div class="chartBox">
+<canvas id="rateChart"></canvas>
+</div>
 </div>
 
 </div>
@@ -137,117 +149,160 @@ let mode=null;
 
 let dorsiSet=1;
 let plantarSet=1;
+let setIndex=0;
 
-let minVal,maxVal;
+let tempDorsiMax=0;
+let tempPlantarMax=0;
+let dorsiDone=false;
+let plantarDone=false;
 
-/* ===== GRAPH 1 (Plantar + Dorsi) ===== */
-const mainChart=new Chart(document.getElementById("mainChart"),{
-    type:'line',
-    data:{
-        labels:[],
-        datasets:[
-            { label:'Dorsi', data:[], borderColor:'red', tension:0.3 },
-            { label:'Plantar', data:[], borderColor:'blue', tension:0.3 }
-        ]
-    },
-    options:{
-        responsive:true,
-        maintainAspectRatio:false,
-        scales:{
-            y:{ min:0, max:60 }   // ⭐ แกน Y ถึง 60°
-        }
-    }
+// ===== Line Chart =====
+const angleChart=new Chart(document.getElementById("angleChart"),{
+type:'line',
+data:{
+labels:[...Array(30)].map((_,i)=>i+1),
+datasets:[
+{
+label:'Plantar (°)',
+data:new Array(30).fill(null),
+borderColor:'#007bff',
+tension:0.3
+},
+{
+label:'Dorsi (°)',
+data:new Array(30).fill(null),
+borderColor:'#dc3545',
+tension:0.3
+}
+]
+},
+options:{
+responsive:true,
+maintainAspectRatio:false,
+animation:false,
+scales:{
+x:{
+title:{display:true,text:'Time (s)'},
+min:1,
+max:30
+},
+y:{
+min:0,
+max:60,   // ⭐ เปลี่ยนจาก 40 เป็น 60
+title:{display:true,text:'Angle (°)'}
+}
+}
+}
 });
 
-/* ===== GRAPH 2 (ROM) ===== */
-const romChart=new Chart(document.getElementById("romChart"),{
-    type:'bar',
-    data:{
-        labels:[],
-        datasets:[{ label:'ROM', data:[], backgroundColor:[] }]
-    },
-    options:{
-        responsive:true,
-        maintainAspectRatio:false,
-        scales:{
-            y:{ min:0, max:60 }   // ⭐ แกน Y ถึง 60°
-        }
-    }
+// ===== Bar Chart =====
+const rateChart=new Chart(document.getElementById("rateChart"),{
+type:'bar',
+data:{
+labels:['Set1','Set2','Set3','Set4','Set5'],
+datasets:[{
+label:'Total ROM (°)',
+data:[0,0,0,0,0],
+backgroundColor:['#007bff','#28a745','#ffc107','#dc3545','#6f42c1']
+}]
+},
+options:{
+responsive:true,
+maintainAspectRatio:false,
+scales:{
+y:{
+beginAtZero:true,
+max:60   // ⭐ เพิ่มให้กราฟแท่งถึง 60 ด้วย
+}
+}
+}
 });
+
+function resetLineChart(){
+angleChart.data.datasets[0].data=new Array(30).fill(null);
+angleChart.data.datasets[1].data=new Array(30).fill(null);
+angleChart.update();
+}
 
 function startMode(selectedMode){
 
-    if(running) return;
+if(running) return;
 
-    mode=selectedMode;
-    running=true;
-    minVal=999;
-    maxVal=-999;
+mode=selectedMode;
+running=true;
 
-    mainChart.data.labels=[];
-    mainChart.data.datasets[0].data=[];
-    mainChart.data.datasets[1].data=[];
-    mainChart.update();
+let second=0;
+let timeLeft=duration;
 
-    let timeLeft=duration;
+document.getElementById("statusText").innerText="Training: "+mode.toUpperCase();
 
-    timer=setInterval(()=>{
+timer=setInterval(()=>{
 
-        let y=(Math.random()*20-10).toFixed(2);
-        document.getElementById("yVal").innerText=y;
+let angle=(Math.random()*30-15);
+let dorsiVal=0;
+let plantarVal=0;
 
-        let angle=parseFloat(y);
-
-        if(mode==="dorsi"){
-            angle=Math.max(0,angle);
-            document.getElementById("dorsi").innerText=angle.toFixed(1)+"°";
-            mainChart.data.datasets[0].data.push(angle);
-            mainChart.data.datasets[1].data.push(null);
-        }else{
-            angle=Math.abs(Math.min(0,angle));
-            document.getElementById("plantar").innerText=angle.toFixed(1)+"°";
-            mainChart.data.datasets[1].data.push(angle);
-            mainChart.data.datasets[0].data.push(null);
-        }
-
-        mainChart.data.labels.push(duration-timeLeft);
-        mainChart.update();
-
-        if(angle<minVal) minVal=angle;
-        if(angle>maxVal) maxVal=angle;
-
-        timeLeft--;
-        document.getElementById("timerText").innerText="เวลา: "+timeLeft+" วิ";
-
-        if(timeLeft<=0) stopMode();
-
-    },1000);
+if(mode==="dorsi"){
+dorsiVal=Math.max(0,angle);
+tempDorsiMax=Math.max(tempDorsiMax,dorsiVal);
+angleChart.data.datasets[1].data[second]=dorsiVal;
+}else{
+plantarVal=Math.abs(Math.min(0,angle));
+tempPlantarMax=Math.max(tempPlantarMax,plantarVal);
+angleChart.data.datasets[0].data[second]=plantarVal;
 }
 
-function stopMode(){
+document.getElementById("dorsi").innerText=dorsiVal.toFixed(1)+"°";
+document.getElementById("plantar").innerText=plantarVal.toFixed(1)+"°";
 
-    clearInterval(timer);
-    running=false;
+angleChart.update();
 
-    let rom=(maxVal-minVal).toFixed(2);
+second++;
+timeLeft--;
+document.getElementById("timerText").innerText="Time: "+timeLeft+" s";
 
-    romChart.data.labels.push(mode+" Set");
-    romChart.data.datasets[0].data.push(rom);
-    romChart.data.datasets[0].backgroundColor.push(
-        mode==="dorsi"?"red":"blue"
-    );
-    romChart.update();
+if(timeLeft<=0){
 
-    document.getElementById("statusText").innerText="เสร็จสิ้น";
+clearInterval(timer);
+running=false;
+
+if(mode==="dorsi"){
+dorsiDone=true;
+dorsiSet++;
+document.getElementById("dorsiSet").innerText=dorsiSet;
+}else{
+plantarDone=true;
+plantarSet++;
+document.getElementById("plantarSet").innerText=plantarSet;
 }
 
-function toggleMode(){
-    document.body.classList.toggle("dark");
-    document.body.classList.toggle("light");
+if(dorsiDone && plantarDone){
+
+let totalROM=tempDorsiMax + tempPlantarMax;
+rateChart.data.datasets[0].data[setIndex]=totalROM;
+rateChart.update();
+
+setIndex++;
+
+tempDorsiMax=0;
+tempPlantarMax=0;
+dorsiDone=false;
+plantarDone=false;
+
+resetLineChart();
+}
+
+document.getElementById("statusText").innerText="Completed";
+}
+
+},1000);
+}
+
+function toggleDark(){
+document.body.classList.toggle("dark");
 }
 
 </script>
+
 </body>
 </html>
-
-
