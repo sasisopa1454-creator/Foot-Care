@@ -55,7 +55,7 @@ body.dark .chartBox{
 
 .card{
   background:white;
-  width:30%;
+  width:23%;
   border-radius:12px;
   padding:15px;
   box-shadow:0 4px 10px rgba(0,0,0,0.1);
@@ -122,6 +122,13 @@ ANKLE REHABILITATION MONITOR
 </div>
 
 <div class="card">
+<h3>EMG</h3>
+<div class="value" id="emg">0 μV</div>
+<div>Muscle Activity</div>
+<button onclick="startEMG()">Start</button>
+</div>
+
+<div class="card">
 <h3>STATUS</h3>
 <div id="statusText">Ready</div>
 <div id="timerText">Time: 0 s</div>
@@ -156,6 +163,10 @@ let tempPlantarMax=0;
 let dorsiDone=false;
 let plantarDone=false;
 
+// EMG
+let emgTimer;
+let emgValue=0;
+
 // ===== Line Chart =====
 const angleChart=new Chart(document.getElementById("angleChart"),{
 type:'line',
@@ -173,6 +184,12 @@ label:'Dorsi (°)',
 data:new Array(30).fill(null),
 borderColor:'#dc3545',
 tension:0.3
+},
+{
+label:'EMG (μV)',
+data:new Array(30).fill(null),
+borderColor:'#28a745',
+tension:0.3
 }
 ]
 },
@@ -188,8 +205,8 @@ max:30
 },
 y:{
 min:0,
-max:60,   // ⭐ เปลี่ยนจาก 40 เป็น 60
-title:{display:true,text:'Angle (°)'}
+max:100,
+title:{display:true,text:'Value'}
 }
 }
 }
@@ -212,15 +229,16 @@ maintainAspectRatio:false,
 scales:{
 y:{
 beginAtZero:true,
-max:60   // ⭐ เพิ่มให้กราฟแท่งถึง 60 ด้วย
+max:60
 }
 }
 }
 });
 
 function resetLineChart(){
-angleChart.data.datasets[0].data=new Array(30).fill(null);
-angleChart.data.datasets[1].data=new Array(30).fill(null);
+angleChart.data.datasets.forEach(ds=>{
+ds.data=new Array(30).fill(null);
+});
 angleChart.update();
 }
 
@@ -241,6 +259,7 @@ timer=setInterval(()=>{
 let angle=(Math.random()*30-15);
 let dorsiVal=0;
 let plantarVal=0;
+let emgVal=Math.random()*100;
 
 if(mode==="dorsi"){
 dorsiVal=Math.max(0,angle);
@@ -251,6 +270,10 @@ plantarVal=Math.abs(Math.min(0,angle));
 tempPlantarMax=Math.max(tempPlantarMax,plantarVal);
 angleChart.data.datasets[0].data[second]=plantarVal;
 }
+
+// EMG update
+angleChart.data.datasets[2].data[second]=emgVal;
+document.getElementById("emg").innerText=emgVal.toFixed(1)+" μV";
 
 document.getElementById("dorsi").innerText=dorsiVal.toFixed(1)+"°";
 document.getElementById("plantar").innerText=plantarVal.toFixed(1)+"°";
@@ -296,6 +319,18 @@ document.getElementById("statusText").innerText="Completed";
 }
 
 },1000);
+}
+
+// EMG separate run
+function startEMG(){
+
+if(emgTimer) return;
+
+emgTimer=setInterval(()=>{
+emgValue=Math.random()*100;
+document.getElementById("emg").innerText=emgValue.toFixed(1)+" μV";
+},500);
+
 }
 
 function toggleDark(){
